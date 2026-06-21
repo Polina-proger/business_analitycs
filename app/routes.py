@@ -41,6 +41,7 @@ from .excel import create_report_template, parse_report_workbook
 
 bp = Blueprint("main", __name__)
 PASSWORD_HASH_METHOD = "pbkdf2:sha256"
+LAST_RETENTION_RUN: str | None = None
 
 
 def login_required(view):
@@ -557,6 +558,30 @@ def dashboard_period_name(dashboard) -> str:
     return title
 
 
+def purge_expired_data() -> None:
+    retention_days = int(current_app.config.get("DATA_RETENTION_DAYS", 62))
+    cutoff = date.today() - timedelta(days=retention_days)
+    db = get_db()
+
+    old_dashboards = db.execute(
+        """
+        SELECT id, filename
+        FROM dashboards
+        WHERE substr(created_at, 1, 10) < ?
+        """,
+        (cutoff.isoformat(),),
+    ).fetchall()
+    for row in old_dashboards:
+        file_path = Path(current_app.config["DASHBOARD_UPLOAD_FOLDER"]) / row["filename"]
+        if file_path.exists():
+            file_path.unlink()
+    if old_dashboards:
+        db.executemany("DELETE FROM dashboards WHERE id = ?", [(row["id"],) for row in old_dashboards])
+
+    db.execute("DELETE FROM reports WHERE period_end < ?", (cutoff.isoformat(),))
+    db.commit()
+
+
 @bp.before_app_request
 def load_logged_in_user():
     user_id = session.get("user_id")
@@ -564,6 +589,16 @@ def load_logged_in_user():
         g.user = None
     else:
         g.user = get_db().execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+
+
+@bp.before_app_request
+def apply_retention_policy():
+    global LAST_RETENTION_RUN
+    today_key = date.today().isoformat()
+    if LAST_RETENTION_RUN == today_key:
+        return
+    purge_expired_data()
+    LAST_RETENTION_RUN = today_key
 
 
 @bp.route("/")
@@ -577,16 +612,18 @@ def index():
 def register():
     if request.method == "POST":
         full_name = request.form["full_name"].strip()
-        email = request.form["email"].strip().lower()
         position = request.form["position"].strip()
         password = request.form["password"]
         error = None
-        if not full_name or not email or not position or not password:
-            error = "Заполните имя, email, должность и пароль."
+        if not full_name or not position or not password:
+            error = "Заполните имя, должность и пароль."
         db = get_db()
-        existing = db.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
+        existing = db.execute(
+            "SELECT id FROM users WHERE lower(full_name) = lower(?)",
+            (full_name,),
+        ).fetchone()
         if existing is not None:
-            error = "Пользователь с таким email уже существует."
+            error = "Пользователь с таким именем уже существует. Используйте уникальное имя."
         if error is None:
             users_count = db.execute("SELECT COUNT(*) AS total FROM users").fetchone()["total"]
             db.execute(
@@ -596,7 +633,7 @@ def register():
                 """,
                 (
                     full_name,
-                    email,
+                    f"user-{uuid.uuid4().hex[:12]}@local",
                     position,
                     generate_password_hash(password, method=PASSWORD_HASH_METHOD),
                     1 if users_count == 0 else 0,
@@ -613,13 +650,21 @@ def register():
 @bp.route("/login", methods=("GET", "POST"))
 def login():
     if request.method == "POST":
-        email = request.form["email"].strip().lower()
+        login_value = request.form["full_name"].strip()
         password = request.form["password"]
         db = get_db()
-        user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        user = db.execute(
+            "SELECT * FROM users WHERE lower(full_name) = lower(?)",
+            (login_value,),
+        ).fetchone()
+        if user is None:
+            user = db.execute(
+                "SELECT * FROM users WHERE lower(email) = lower(?)",
+                (login_value,),
+            ).fetchone()
         error = None
         if user is None or not check_password_hash(user["password_hash"], password):
-            error = "Неверный email или пароль."
+            error = "Неверное имя или пароль."
         if error is None:
             session.clear()
             session["user_id"] = user["id"]
@@ -790,7 +835,10 @@ def import_report(report_key: str):
     if upload is None or upload.filename == "":
         flash("Сначала выберите Excel-файл шаблона.", "error")
         return redirect(url_for("main.report_form", report_key=report_key))
-    imported_data = parse_report_workbook(upload)
+    try:
+        imported_data = parse_report_workbook(upload)
+    finally:
+        upload.close()
     try:
         summary_metrics = build_summary_metrics_payload(report_key, imported_rows=imported_data["summary_metrics"])
         article_entries = build_article_entries_payload(report_key, imported_rows=imported_data["article_entries"])
@@ -807,7 +855,7 @@ def import_report(report_key: str):
         article_entries,
     )
     sync_article_catalog(article_entries)
-    flash("Excel-отчет загружен и сохранен.", "success")
+    flash("Excel-файл обработан. В базе сохранены только значения отчета, сам файл не хранится.", "success")
     return redirect(url_for("main.report_detail", report_id=report_id))
 
 

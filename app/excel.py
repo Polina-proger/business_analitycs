@@ -27,7 +27,7 @@ def create_report_template(report_key: str, definition: dict, period_type: str) 
     sheet["B3"] = definition["title"]
     sheet["A4"] = "Период"
     sheet["B4"] = PERIOD_LABELS[period_type]
-    sheet["A5"] = "Заполняйте только значения, код строки не меняйте."
+    sheet["A5"] = "Заполняйте только значения и названия артикулов. После импорта в систему сохраняются только данные, а не сам Excel-файл."
     sheet["A5"].font = TITLE_FONT
 
     headers = ["Код", "Показатель", "Единица", "План", "Факт", "Комментарий"]

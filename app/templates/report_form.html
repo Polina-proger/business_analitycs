@@ -142,6 +142,7 @@
             <div class="section-head small">
                 <h3>Импорт из Excel</h3>
             </div>
+            <div class="hint-box">Из шаблона в базу попадают только значения. Сам Excel-файл после обработки не хранится.</div>
             <form method="post" action="{{ url_for('main.import_report', report_key=report_key) }}" enctype="multipart/form-data" class="form-stack">
                 <label class="field">
                     <span>Тип периода</span>

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from flask import Flask
@@ -23,11 +24,13 @@ def format_metric(value, unit=""):
 
 def create_app():
     base_dir = Path(__file__).resolve().parent.parent
+    data_dir = Path(os.environ.get("BUSINESS_ANALYTICS_DATA_DIR", str(base_dir / "instance")))
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY="business-analytics-local-secret",
-        DATABASE=str(base_dir / "instance" / "business_analytics.sqlite3"),
+        DATABASE=str(data_dir / "business_analytics.sqlite3"),
         DASHBOARD_UPLOAD_FOLDER=str(base_dir / "app" / "uploads" / "dashboards"),
+        DATA_RETENTION_DAYS=62,
     )
 
     Path(app.config["DASHBOARD_UPLOAD_FOLDER"]).mkdir(parents=True, exist_ok=True)
