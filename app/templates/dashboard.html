@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+{% block topbar_title %}
+<div class="page-heading">
+    <div class="eyebrow">Система отчетов</div>
+    <h1>Главная</h1>
+</div>
+{% endblock %}
+{% block content %}
+<section class="panel period-panel">
+    <div class="section-head">
+        <div>
+            <h2>Период</h2>
+            <span class="section-note">{{ current_label }}</span>
+        </div>
+        <div class="hero-actions">
+            <a class="btn btn-ghost" href="{{ url_for('main.reports_archive') }}">Все отчеты</a>
+            <a class="btn btn-secondary" href="{{ url_for('main.dashboards') }}">HTML-дашборды</a>
+        </div>
+    </div>
+    <div class="period-switcher">
+        {% for key, label in period_labels.items() %}
+            <a class="period-chip {% if selected_period == key %}active{% endif %}" href="{{ period_urls[key] }}">{{ label }}</a>
+        {% endfor %}
+    </div>
+    <form method="get" class="period-selector-form">
+        <input type="hidden" name="period" value="{{ selected_period }}">
+        {% if selected_period == "daily" %}
+            <label class="field period-field">
+                <span>Дата</span>
+                <input type="date" name="day_date" value="{{ day_value }}">
+            </label>
+        {% elif selected_period == "weekly" %}
+            <label class="field period-field">
+                <span>Неделя</span>
+                <select name="week_start">
+                    {% for option in week_options %}
+                        <option value="{{ option.value }}" {% if week_value == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% else %}
+            <label class="field period-field">
+                <span>Месяц</span>
+                <select name="month_start">
+                    {% for option in month_options %}
+                        <option value="{{ option.value }}" {% if month_value == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        {% endif %}
+        <button class="btn btn-primary" type="submit">Показать</button>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="section-head">
+        <h2>Блоки отчетов</h2>
+        <span class="section-note">Если отчет уже заполнен за выбранный период, здесь сразу видны его данные</span>
+    </div>
+    <div class="report-catalog">
+        {% for group_name, reports in report_groups.items() %}
+            <div class="group-block">
+                <div class="group-title">{{ group_name }}</div>
+                <div class="catalog-grid">
+                    {% for report_key, definition in reports %}
+                        {% set snapshot = snapshots.get(report_key) %}
+                        <article class="catalog-card catalog-card-report">
+                            <div class="catalog-head">
+                                <div>
+                                    <h3>{{ definition.title }}</h3>
+                                    <p>{{ definition.description }}</p>
+                                </div>
+                                {% if snapshot %}
+                                    <span class="catalog-status catalog-status-icon" title="Заполнено">✓</span>
+                                {% else %}
+                                    <span class="catalog-status catalog-status-empty catalog-status-icon" title="Нет данных">✕</span>
+                                {% endif %}
+                            </div>
+                            {% if snapshot %}
+                                <div class="snapshot-meta">{{ snapshot.period_label }} · {{ snapshot.submitted_by_name }}</div>
+                                <div class="snapshot-grid">
+                                    {% for metric in snapshot.summary_metrics[:3] %}
+                                        <div class="snapshot-item">
+                                            <span>{{ metric.label }}</span>
+                                            <strong>{{ format_metric(metric.fact, metric.unit) }}</strong>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="catalog-actions">
+                                    <a class="btn btn-secondary" href="{{ url_for('main.report_detail', report_id=snapshot.id) }}">Открыть</a>
+                                    <a class="btn btn-ghost" href="{{ url_for('main.report_form', report_key=report_key) }}">Новый отчет</a>
+                                    <a class="btn btn-ghost" href="{{ url_for('main.reports_archive') }}#{{ report_key }}">История</a>
+                                </div>
+                            {% else %}
+                                <div class="empty-state compact-empty">За этот период отчет еще не заполнен.</div>
+                                <div class="catalog-actions">
+                                    <a class="btn btn-primary" href="{{ url_for('main.report_form', report_key=report_key) }}">Заполнить</a>
+                                    <a class="btn btn-ghost" href="{{ url_for('main.reports_archive') }}#{{ report_key }}">История</a>
+                                </div>
+                            {% endif %}
+                        </article>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

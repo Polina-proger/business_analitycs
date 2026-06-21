@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ dashboard["title"] }}{% endblock %}
+{% block topbar_title %}
+<div class="page-heading">
+    <div class="eyebrow">{{ dashboard["platform"] }}</div>
+    <h1>{{ dashboard["title"] }}</h1>
+</div>
+{% endblock %}
+{% block content %}
+<section class="panel">
+    <div class="section-head">
+        <div>
+            <h2>{{ dashboard["period_type"]|capitalize }} dashboard</h2>
+            <span class="section-note">{{ dashboard["original_name"] }}</span>
+        </div>
+        <div class="inline-actions">
+            <a class="btn btn-secondary" href="{{ url_for('main.dashboards') }}">Назад</a>
+            {% if dashboard["uploaded_by"] == g.user["id"] or g.user["is_admin"] %}
+                <a class="btn btn-primary" href="{{ url_for('main.dashboard_edit', dashboard_id=dashboard['id']) }}">Изменить</a>
+                <form method="post" action="{{ url_for('main.dashboard_delete', dashboard_id=dashboard['id']) }}" class="inline-form" onsubmit="return confirm('Удалить этот дашборд?');">
+                    <input type="hidden" name="next" value="{{ url_for('main.dashboards') }}">
+                    <button class="btn btn-danger" type="submit">Удалить</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    <div class="iframe-wrap">
+        <iframe src="{{ url_for('main.dashboard_file', filename=dashboard['filename']) }}" title="{{ dashboard['title'] }}"></iframe>
+    </div>
+</section>
+{% endblock %}

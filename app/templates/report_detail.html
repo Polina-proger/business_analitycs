@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ report.report_title }}{% endblock %}
+{% block topbar_title %}
+<div class="page-heading">
+    <div class="eyebrow">{{ report.definition.group }}</div>
+    <h1>{{ report.report_title }}</h1>
+</div>
+{% endblock %}
+{% block content %}
+<section class="panel">
+    <div class="section-head">
+        <div>
+            <h2>{{ report.period_label }}</h2>
+            <span class="section-note">{{ report.submitted_by_name }} · {{ report.submitted_by_position }} · {{ report.updated_at|dt }}</span>
+        </div>
+        <div class="inline-actions">
+            <a class="btn btn-secondary" href="{{ url_for('main.reports_archive') }}">Все отчеты</a>
+            {% if report.submitted_by == g.user["id"] or g.user["is_admin"] %}
+                <a class="btn btn-primary" href="{{ url_for('main.edit_report', report_id=report.id) }}">Изменить</a>
+                <form method="post" action="{{ url_for('main.delete_report', report_id=report.id) }}" class="inline-form" onsubmit="return confirm('Удалить этот отчет?');">
+                    <input type="hidden" name="next" value="{{ url_for('main.reports_archive') }}">
+                    <button class="btn btn-danger" type="submit">Удалить</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="metrics-grid">
+        {% for metric in report.summary_metrics %}
+            <article class="metric-card status-{{ metric.status }}">
+                <div class="metric-top">
+                    <div>
+                        <div class="metric-label">{{ metric.label }}</div>
+                        <div class="metric-value">{{ format_metric(metric.fact, metric.unit) }}</div>
+                    </div>
+                    {% if metric.achievement is not none %}
+                        <span class="pill">{{ "%.1f"|format(metric.achievement) }}%</span>
+                    {% endif %}
+                </div>
+                <div class="metric-sub">
+                    {% if metric.has_plan %}
+                        <span>План: {{ format_metric(metric.plan, metric.unit) }}</span>
+                    {% else %}
+                        <span>План не требуется</span>
+                    {% endif %}
+                    {% if metric.comment %}
+                        <span>{{ metric.comment }}</span>
+                    {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-head">
+        <h2>Поартикульный разворот</h2>
+        <span class="section-note">Артикулы можно переиспользовать в следующих отчетах через поиск по названию</span>
+    </div>
+    {% if report.article_groups %}
+        <div class="accordion-stack">
+            {% for group in report.article_groups %}
+                <details class="accordion nested" {% if loop.first %}open{% endif %}>
+                    <summary>
+                        <span>{{ group.article_name }}</span>
+                        <span class="summary-note">{{ group.entries|length }} строк</span>
+                    </summary>
+                    <div class="accordion-body">
+                        <div class="article-detail-table">
+                            <div class="article-detail-row article-detail-head">
+                                <div>Показатель</div>
+                                <div>План</div>
+                                <div>Факт</div>
+                                <div>Комментарий</div>
+                            </div>
+                            {% for entry in group.entries %}
+                                <div class="article-detail-row">
+                                    <div>{{ entry.metric_label }} · {{ entry.unit }}</div>
+                                    <div>{{ format_metric(entry.plan, entry.unit) if entry.has_plan else 'Не нужен' }}</div>
+                                    <div>{{ format_metric(entry.fact, entry.unit) }}</div>
+                                    <div>{{ entry.comment or '—' }}</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </details>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">Поартикульный разворот пока не заполнен.</div>
+    {% endif %}
+</section>
+{% endblock %}

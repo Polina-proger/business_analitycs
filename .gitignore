@@ -1,0 +1,8 @@
+instance/
+app/uploads/dashboards/*
+!app/uploads/dashboards/.gitkeep
+__pycache__/
+*.pyc
+
+.venv/
+.DS_Store

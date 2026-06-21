@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Аналитика бизнеса{% endblock %}</title>
+    <link rel="icon" type="image/png" sizes="256x256" href="{{ url_for('static', filename='favicon/favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="{% if not g.user %}auth-body{% endif %}">
+    <div class="app-shell {% if not g.user %}auth-shell{% endif %}">
+        {% if g.user %}
+            <aside class="sidebar">
+                <div class="brand-block">
+                    <a class="brand-logo" href="{{ url_for('main.dashboard') }}" aria-label="Multi Delight">
+                        <img src="{{ url_for('static', filename='img/logo-md-full.png') }}" alt="Multi Delight">
+                    </a>
+                    <a class="brand-logo brand-logo-secondary" href="{{ url_for('main.dashboard') }}" aria-label="Havenroot">
+                        <img src="{{ url_for('static', filename='img/logo-havenroot.png') }}" alt="Havenroot">
+                    </a>
+                    <a class="brand-title" href="{{ url_for('main.dashboard') }}">Аналитика бизнеса</a>
+                </div>
+
+                <nav class="nav-stack">
+                    <a class="nav-link" href="{{ url_for('main.dashboard') }}">Главная</a>
+                    <a class="nav-link" href="{{ url_for('main.reports_archive') }}">Все отчеты</a>
+                    <a class="nav-link" href="{{ url_for('main.dashboards') }}">HTML-дашборды</a>
+                    <a class="nav-link" href="{{ url_for('main.logout') }}">Выйти</a>
+                </nav>
+
+                <div class="user-panel">
+                    <div class="user-name">{{ g.user["full_name"] }}</div>
+                    <div class="user-role">{{ g.user["position"] }}</div>
+                </div>
+            </aside>
+        {% endif %}
+
+        <main class="main-content {% if not g.user %}main-auth{% endif %}">
+            <header class="topbar {% if not g.user %}topbar-auth{% endif %}">
+                <div>
+                    {% block topbar_title %}{% endblock %}
+                </div>
+                <button class="theme-toggle" type="button" data-theme-toggle aria-label="Переключить тему" title="Переключить тему">
+                    <span class="theme-icon theme-icon-sun" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                            <circle cx="12" cy="12" r="4.5"></circle>
+                            <path d="M12 2.5v2.2M12 19.3v2.2M4.93 4.93l1.56 1.56M17.51 17.51l1.56 1.56M2.5 12h2.2M19.3 12h2.2M4.93 19.07l1.56-1.56M17.51 6.49l1.56-1.56"></path>
+                        </svg>
+                    </span>
+                    <span class="theme-icon theme-icon-moon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" focusable="false">
+                            <path d="M20.2 14.2A8.8 8.8 0 0 1 9.8 3.8a9.2 9.2 0 1 0 10.4 10.4Z"></path>
+                        </svg>
+                    </span>
+                </button>
+            </header>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <section class="flash-stack">
+                        {% for category, message in messages %}
+                            <div class="flash flash-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </section>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

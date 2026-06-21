@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Редактировать HTML-дашборд{% endblock %}
+{% block topbar_title %}
+<div class="page-heading">
+    <div class="eyebrow">Внешние файлы</div>
+    <h1>Редактирование дашборда</h1>
+</div>
+{% endblock %}
+{% block content %}
+<section class="panel">
+    <div class="section-head">
+        <div>
+            <h2>{{ dashboard["title"] }}</h2>
+            <span class="section-note">Загрузите новый HTML-файл, чтобы заменить текущую версию</span>
+        </div>
+        <div class="inline-actions">
+            <a class="btn btn-secondary" href="{{ url_for('main.dashboard_view', dashboard_id=dashboard['id']) }}">Назад</a>
+            <form method="post" action="{{ url_for('main.dashboard_delete', dashboard_id=dashboard['id']) }}" class="inline-form" onsubmit="return confirm('Удалить этот дашборд?');">
+                <input type="hidden" name="next" value="{{ url_for('main.dashboards') }}">
+                <button class="btn btn-danger" type="submit">Удалить</button>
+            </form>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="form-grid">
+        <label class="field">
+            <span>Тип</span>
+            <select name="period_type" data-dashboard-period-type>
+                <option value="weekly" {% if dashboard["period_type"] == "weekly" %}selected{% endif %}>Weekly</option>
+                <option value="monthly" {% if dashboard["period_type"] == "monthly" %}selected{% endif %}>Monthly</option>
+            </select>
+        </label>
+        <label class="field">
+            <span>Период</span>
+            <input type="text" name="period_name" value="{{ period_name }}" data-dashboard-period-name required>
+        </label>
+        <div class="dashboard-title-preview" data-dashboard-title-preview>{{ dashboard["title"] }}</div>
+        <label class="field field-full">
+            <span>Новый HTML-файл</span>
+            <input type="file" name="dashboard_file" accept=".html" required>
+        </label>
+        <button class="btn btn-primary" type="submit">Сохранить замену</button>
+    </form>
+</section>
+{% endblock %}

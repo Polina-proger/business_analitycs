@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Все отчеты{% endblock %}
+{% block topbar_title %}
+<div class="page-heading">
+    <div class="eyebrow">Архив отчетов</div>
+    <h1>Все отчеты</h1>
+</div>
+{% endblock %}
+{% block content %}
+<section class="panel">
+    <div class="section-head">
+        <h2>Отчеты по блокам</h2>
+        <span class="section-note">Сначала группы, затем конкретный вид отчета, затем отдельные сохранения</span>
+    </div>
+
+    <div class="accordion-stack">
+        {% for group_name, reports in report_groups.items() %}
+            <details class="accordion" {% if loop.first %}open{% endif %}>
+                <summary>{{ group_name }}</summary>
+                <div class="accordion-body">
+                    {% for report_key, definition in reports %}
+                        <details class="accordion nested" id="{{ report_key }}">
+                            <summary>
+                                <span>{{ definition.title }}</span>
+                                <span class="summary-note">{{ definition.description }}</span>
+                            </summary>
+                            <div class="accordion-body">
+                                <div class="inline-actions">
+                                    <a class="btn btn-primary" href="{{ url_for('main.report_form', report_key=report_key) }}">Новый отчет</a>
+                                </div>
+                                {% for report in grouped_rows.get(report_key, []) %}
+                                    <article class="report-row">
+                                        <div class="report-row-head">
+                                            <div>
+                                                <h3>{{ report.period_label }}</h3>
+                                                <div class="muted">{{ period_labels[report.period_type] }} · {{ report.submitted_by_name }} · {{ report.submitted_by_position }}</div>
+                                            </div>
+                                            <div class="inline-actions">
+                                                <a class="btn btn-secondary" href="{{ url_for('main.report_detail', report_id=report.id) }}">Открыть</a>
+                                                {% if report.submitted_by == g.user["id"] or g.user["is_admin"] %}
+                                                    <a class="btn btn-ghost" href="{{ url_for('main.edit_report', report_id=report.id) }}">Изменить</a>
+                                                    <form method="post" action="{{ url_for('main.delete_report', report_id=report.id) }}" class="inline-form" onsubmit="return confirm('Удалить этот отчет?');">
+                                                        <input type="hidden" name="next" value="{{ url_for('main.reports_archive') }}">
+                                                        <button class="btn btn-danger" type="submit">Удалить</button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="mini-metrics">
+                                            {% for metric in report.summary_metrics[:4] %}
+                                                <div class="mini-metric">
+                                                    <span>{{ metric.label }}</span>
+                                                    <strong>{{ format_metric(metric.fact, metric.unit) }}</strong>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </article>
+                                {% else %}
+                                    <div class="empty-state">Для этого блока еще нет сохранений.</div>
+                                {% endfor %}
+                            </div>
+                        </details>
+                    {% endfor %}
+                </div>
+            </details>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-head">
+        <h2>Последние записи</h2>
+        <span class="section-note">Последние сохраненные отчеты</span>
+    </div>
+    <div class="activity-list">
+        {% for report in latest_reports %}
+            <a class="activity-item" href="{{ url_for('main.report_detail', report_id=report.id) }}">
+                <div>
+                    <div class="activity-title">{{ report.report_title }} · {{ period_labels[report.period_type] }}</div>
+                    <div class="activity-meta">{{ report.period_label }} · {{ report.submitted_by_name }}</div>
+                </div>
+                <span class="activity-link">Открыть</span>
+            </a>
+        {% else %}
+            <div class="empty-state">Пока нет сохраненных отчетов.</div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

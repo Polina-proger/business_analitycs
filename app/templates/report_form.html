@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}{{ definition.title }}{% endblock %}
+{% block topbar_title %}
+<div class="page-heading">
+    <div class="eyebrow">{{ definition.group }}</div>
+    <h1>{{ definition.title }}</h1>
+</div>
+{% endblock %}
+{% block content %}
+<section class="panel">
+    <div class="section-head">
+        <div>
+            <h2>{% if report %}Редактирование{% else %}Новый отчет{% endif %}</h2>
+            <span class="section-note">{{ definition.description }}</span>
+        </div>
+        <a class="btn btn-secondary" href="{{ url_for('main.reports_archive') }}">К архиву</a>
+    </div>
+
+    <div class="download-strip">
+        <span>Шаблоны Excel:</span>
+        <a class="btn btn-ghost" href="{{ url_for('main.download_template', report_key=report_key, period_type='daily') }}">День</a>
+        <a class="btn btn-ghost" href="{{ url_for('main.download_template', report_key=report_key, period_type='weekly') }}">Неделя</a>
+        <a class="btn btn-ghost" href="{{ url_for('main.download_template', report_key=report_key, period_type='monthly') }}">Месяц</a>
+    </div>
+
+    <div class="two-column">
+        <form method="post" class="form-stack">
+            <div class="meta-grid">
+                <label class="field">
+                    <span>Тип периода</span>
+                    <select name="period_type" data-period-type>
+                        {% for key, label in period_labels.items() %}
+                            <option value="{{ key }}" {% if report and report.period_type == key %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="field">
+                    <span>Дата отчета</span>
+                    <input type="date" name="report_date" value="{{ report.report_date if report else today }}" required>
+                </label>
+                <label class="field">
+                    <span>Начало периода</span>
+                    <input type="date" name="period_start" value="{{ report.period_start if report else '' }}">
+                </label>
+                <label class="field">
+                    <span>Конец периода</span>
+                    <input type="date" name="period_end" value="{{ report.period_end if report else '' }}">
+                </label>
+            </div>
+
+            <div class="hint-box">Если начало и конец периода не заполнены, система сама рассчитает их по выбранному типу периода.</div>
+
+            <div class="metric-table">
+                <div class="metric-row metric-head">
+                    <div>Показатель</div>
+                    <div>План</div>
+                    <div>Факт</div>
+                    <div>Комментарий</div>
+                </div>
+                {% for metric in definition.metrics %}
+                    {% set current = report_values.get(metric.code, {}) %}
+                    <div class="metric-row">
+                        <div class="metric-name">
+                            <strong>{{ metric.label }}</strong>
+                            <span>{{ metric.unit }}</span>
+                        </div>
+                        <div>
+                            {% if metric.has_plan %}
+                                <input type="text" name="plan_{{ metric.code }}" value="{{ current.plan if current else '' }}" inputmode="decimal" placeholder="План">
+                            {% else %}
+                                <span class="muted">Не нужен</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <input type="text" name="fact_{{ metric.code }}" value="{{ current.fact if current else '' }}" inputmode="decimal" placeholder="Факт">
+                        </div>
+                        <div>
+                            <input type="text" name="comment_{{ metric.code }}" value="{{ current.comment if current else '' }}" placeholder="Короткий комментарий">
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <section class="article-section">
+                <div class="section-head small">
+                    <div>
+                        <h3>Поартикульный разворот</h3>
+                        <span class="section-note">Общие показатели выше сохраняются как итог, а здесь можно добавить детализацию по артикулам</span>
+                    </div>
+                    <button class="btn btn-ghost" type="button" data-add-article-row>Добавить строку</button>
+                </div>
+
+                <datalist id="article-name-options">
+                    {% for article_name in article_names %}
+                        <option value="{{ article_name }}"></option>
+                    {% endfor %}
+                </datalist>
+
+                <div class="article-table" data-article-rows>
+                    <div class="article-row article-head">
+                        <div>Артикул</div>
+                        <div>Показатель</div>
+                        <div>План</div>
+                        <div>Факт</div>
+                        <div>Комментарий</div>
+                        <div></div>
+                    </div>
+                    {% for entry in article_entries %}
+                        <div class="article-row" data-article-row>
+                            <div>
+                                <input type="text" name="article_name[]" value="{{ entry.article_name if entry.article_name is defined else '' }}" list="article-name-options" placeholder="Название артикула">
+                            </div>
+                            <div>
+                                <select name="article_metric_code[]">
+                                    <option value="">Выберите показатель</option>
+                                    {% for metric in definition.metrics %}
+                                        <option value="{{ metric.code }}" {% if entry.metric_code is defined and entry.metric_code == metric.code %}selected{% endif %}>{{ metric.label }} · {{ metric.unit }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <input type="text" name="article_plan[]" value="{{ entry.plan if entry.plan is defined and entry.plan is not none else '' }}" inputmode="decimal" placeholder="План">
+                            </div>
+                            <div>
+                                <input type="text" name="article_fact[]" value="{{ entry.fact if entry.fact is defined and entry.fact is not none else '' }}" inputmode="decimal" placeholder="Факт">
+                            </div>
+                            <div>
+                                <input type="text" name="article_comment[]" value="{{ entry.comment if entry.comment is defined else '' }}" placeholder="Комментарий">
+                            </div>
+                            <div>
+                                <button class="btn btn-ghost btn-square" type="button" data-remove-article-row>×</button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <button class="btn btn-primary" type="submit">{% if report %}Сохранить изменения{% else %}Сохранить отчет{% endif %}</button>
+        </form>
+
+        <aside class="side-panel">
+            <div class="section-head small">
+                <h3>Импорт из Excel</h3>
+            </div>
+            <form method="post" action="{{ url_for('main.import_report', report_key=report_key) }}" enctype="multipart/form-data" class="form-stack">
+                <label class="field">
+                    <span>Тип периода</span>
+                    <select name="period_type">
+                        {% for key, label in period_labels.items() %}
+                            <option value="{{ key }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="field">
+                    <span>Дата отчета</span>
+                    <input type="date" name="report_date" value="{{ today }}" required>
+                </label>
+                <label class="field">
+                    <span>Начало периода</span>
+                    <input type="date" name="period_start">
+                </label>
+                <label class="field">
+                    <span>Конец периода</span>
+                    <input type="date" name="period_end">
+                </label>
+                <label class="field">
+                    <span>Excel-файл</span>
+                    <input type="file" name="report_file" accept=".xlsx" required>
+                </label>
+                <button class="btn btn-secondary" type="submit">Загрузить шаблон</button>
+            </form>
+        </aside>
+    </div>
+</section>
+
+<template id="article-row-template">
+    <div class="article-row" data-article-row>
+        <div>
+            <input type="text" name="article_name[]" value="" list="article-name-options" placeholder="Название артикула">
+        </div>
+        <div>
+            <select name="article_metric_code[]">
+                <option value="">Выберите показатель</option>
+                {% for metric in definition.metrics %}
+                    <option value="{{ metric.code }}">{{ metric.label }} · {{ metric.unit }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <input type="text" name="article_plan[]" value="" inputmode="decimal" placeholder="План">
+        </div>
+        <div>
+            <input type="text" name="article_fact[]" value="" inputmode="decimal" placeholder="Факт">
+        </div>
+        <div>
+            <input type="text" name="article_comment[]" value="" placeholder="Комментарий">
+        </div>
+        <div>
+            <button class="btn btn-ghost btn-square" type="button" data-remove-article-row>×</button>
+        </div>
+    </div>
+</template>
+{% endblock %}

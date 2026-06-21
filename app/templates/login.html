@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Вход{% endblock %}
+{% block content %}
+<section class="auth-wrap">
+    <div class="auth-layout">
+        <section class="auth-showcase">
+            <div class="auth-kicker">Система отчетности</div>
+            <h1>Отчеты по Ozon, WB, финансам, закупкам и логистике в одном кабинете</h1>
+            <p>Сотрудник открывает только нужный ему отчет, быстро вносит цифры вручную или через Excel, а руководитель видит аккуратную сводку без лишних экранов.</p>
+
+            <div class="auth-points">
+                <div class="auth-point">
+                    <strong>Периоды</strong>
+                    <span>День, неделя и месяц в одной логике.</span>
+                </div>
+                <div class="auth-point">
+                    <strong>Формат</strong>
+                    <span>Форма, Excel-шаблон и HTML-дашборды.</span>
+                </div>
+                <div class="auth-point">
+                    <strong>Просмотр</strong>
+                    <span>Все отчеты собраны в сворачиваемом архиве.</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="auth-card">
+            <div class="auth-kicker">Вход</div>
+            <h2>Рабочий кабинет</h2>
+            <p class="muted">Введите email и пароль сотрудника.</p>
+
+            <form method="post" class="form-stack">
+                <label class="field">
+                    <span>Email</span>
+                    <input type="email" name="email" placeholder="name@company.ru" required>
+                </label>
+                <label class="field">
+                    <span>Пароль</span>
+                    <input type="password" name="password" placeholder="Введите пароль" required>
+                </label>
+                <button class="btn btn-primary" type="submit">Войти</button>
+            </form>
+
+            <p class="auth-footer">Нет аккаунта? <a href="{{ url_for('main.register') }}">Зарегистрировать сотрудника</a></p>
+        </section>
+    </div>
+</section>
+{% endblock %}

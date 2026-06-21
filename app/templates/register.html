@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Регистрация{% endblock %}
+{% block content %}
+<section class="auth-wrap">
+    <div class="auth-layout auth-layout-register">
+        <section class="auth-showcase">
+            <div class="auth-kicker">Новый пользователь</div>
+            <h1>Регистрация сотрудника для заполнения отчетов</h1>
+            <p>Достаточно имени, должности, email и пароля. После входа сотрудник сразу выбирает свой блок отчетности и приступает к заполнению.</p>
+
+            <div class="auth-points">
+                <div class="auth-point">
+                    <strong>Должность</strong>
+                    <span>Сохраняется вместе с каждым отчетом.</span>
+                </div>
+                <div class="auth-point">
+                    <strong>История</strong>
+                    <span>Все отчеты легко отследить по автору и периоду.</span>
+                </div>
+                <div class="auth-point">
+                    <strong>Удобство</strong>
+                    <span>Крупные формы и минимальное количество лишнего текста.</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="auth-card auth-wide">
+            <div class="auth-kicker">Регистрация</div>
+            <h2>Новый сотрудник</h2>
+            <p class="muted">Создайте доступ в систему отчетности.</p>
+
+            <form method="post" class="form-grid auth-form-grid">
+                <label class="field">
+                    <span>Имя и фамилия</span>
+                    <input type="text" name="full_name" placeholder="Анна Иванова" required>
+                </label>
+                <label class="field">
+                    <span>Email</span>
+                    <input type="email" name="email" placeholder="anna@company.ru" required>
+                </label>
+                <label class="field">
+                    <span>Должность</span>
+                    <input type="text" name="position" placeholder="Аналитик Ozon" required>
+                </label>
+                <label class="field">
+                    <span>Пароль</span>
+                    <input type="password" name="password" placeholder="Введите пароль" required>
+                </label>
+                <button class="btn btn-primary" type="submit">Создать аккаунт</button>
+            </form>
+
+            <p class="auth-footer">Уже есть аккаунт? <a href="{{ url_for('main.login') }}">Вернуться ко входу</a></p>
+        </section>
+    </div>
+</section>
+{% endblock %}
