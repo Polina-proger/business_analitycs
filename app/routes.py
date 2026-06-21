@@ -133,7 +133,7 @@ def build_article_entries_payload(report_key: str, source: dict | None = None, i
         article_name = str(article_name or "").strip()
         metric_code = str(metric_code or "").strip()
         comment_text = str(comment_value or "").strip()
-        has_value = any(
+        has_any_input = any(
             [
                 article_name,
                 metric_code,
@@ -142,12 +142,21 @@ def build_article_entries_payload(report_key: str, source: dict | None = None, i
                 comment_text,
             ]
         )
-        if not has_value:
+        if not has_any_input:
             continue
-        if not article_name:
-            raise ValueError(f"Укажите название артикула в строке {index} поартикульного блока.")
-        if metric_code not in lookup:
-            raise ValueError(f"Укажите корректный показатель в строке {index} поартикульного блока.")
+        # Incomplete article rows are ignored so a partially filled breakdown
+        # never blocks saving the main report or Excel import.
+        if not article_name or metric_code not in lookup:
+            continue
+        has_payload = any(
+            [
+                str(plan_value or "").strip(),
+                str(fact_value or "").strip(),
+                comment_text,
+            ]
+        )
+        if not has_payload:
+            continue
         entries.append(
             {
                 "article_name": article_name,
