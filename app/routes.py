@@ -29,11 +29,14 @@ from werkzeug.utils import secure_filename
 from .catalog import (
     PERIOD_LABELS,
     all_reports,
+    all_report_keys,
     build_period_label,
     default_period_bounds,
     get_report_definition,
+    get_zone_definition,
     grouped_reports,
     metric_lookup,
+    responsibility_zones,
 )
 from .db import get_db
 from .excel import create_report_template, parse_report_workbook
@@ -42,6 +45,7 @@ from .excel import create_report_template, parse_report_workbook
 bp = Blueprint("main", __name__)
 PASSWORD_HASH_METHOD = "pbkdf2:sha256"
 LAST_RETENTION_RUN: str | None = None
+DASHBOARD_FILTERS_SESSION_KEY = "dashboard_filters"
 
 
 def login_required(view):
@@ -290,7 +294,7 @@ def store_report(
                 end.isoformat(),
                 g.user["id"],
                 g.user["full_name"],
-                g.user["position"],
+                g.user_scope["zone_label"],
                 payload,
                 now,
                 now,
@@ -314,7 +318,7 @@ def store_report(
             payload,
             now,
             g.user["full_name"],
-            g.user["position"],
+            g.user_scope["zone_label"],
             report_id,
         ),
     )
@@ -478,11 +482,12 @@ def snapshots_for_period(period_type: str, period_start: date, period_end: date)
 
 
 def resolve_dashboard_period_selection(args) -> dict:
-    selected_period = args.get("period", "weekly")
+    saved = stored_dashboard_filters()
+    selected_period = args.get("period") or saved.get("period") or "weekly"
     if selected_period not in PERIOD_LABELS:
         selected_period = "weekly"
 
-    day_value = args.get("day_date") or date.today().isoformat()
+    day_value = args.get("day_date") or saved.get("day_date") or date.today().isoformat()
     try:
         day_date = datetime.strptime(day_value, "%Y-%m-%d").date()
     except ValueError:
@@ -491,7 +496,7 @@ def resolve_dashboard_period_selection(args) -> dict:
 
     week_options = build_week_options()
     default_week_value = week_options[1]["value"] if len(week_options) > 1 else week_options[0]["value"]
-    selected_week_value = args.get("week_start") or default_week_value
+    selected_week_value = args.get("week_start") or saved.get("week_start") or default_week_value
     selected_week = next((item for item in week_options if item["value"] == selected_week_value), None)
     if selected_week is None:
         selected_week = next(item for item in week_options if item["value"] == default_week_value)
@@ -499,7 +504,7 @@ def resolve_dashboard_period_selection(args) -> dict:
 
     month_options = build_month_options()
     default_month_value = month_options[0]["value"]
-    selected_month_value = args.get("month_start") or default_month_value
+    selected_month_value = args.get("month_start") or saved.get("month_start") or default_month_value
     selected_month = next((item for item in month_options if item["value"] == selected_month_value), None)
     if selected_month is None:
         selected_month = next(item for item in month_options if item["value"] == default_month_value)
@@ -567,6 +572,102 @@ def dashboard_period_name(dashboard) -> str:
     return title
 
 
+def build_user_scope(user) -> dict:
+    if user is None:
+        return {
+            "zone_key": None,
+            "zone_label": "",
+            "report_keys": [],
+            "can_submit_reports": False,
+            "can_view_dashboards": False,
+            "can_upload_dashboards": False,
+        }
+
+    if user["is_admin"]:
+        return {
+            "zone_key": "admin",
+            "zone_label": "Администратор",
+            "report_keys": all_report_keys(),
+            "can_submit_reports": True,
+            "can_view_dashboards": True,
+            "can_upload_dashboards": True,
+        }
+
+    zone_key = user["position"] if get_zone_definition(user["position"]) else "management"
+    zone = get_zone_definition(zone_key)
+    return {
+        "zone_key": zone_key,
+        "zone_label": zone["label"],
+        "report_keys": zone["report_keys"],
+        "can_submit_reports": zone["can_submit_reports"],
+        "can_view_dashboards": zone["can_view_dashboards"],
+        "can_upload_dashboards": zone["can_upload_dashboards"],
+    }
+
+
+def visible_report_groups() -> dict[str, list[tuple[str, dict]]]:
+    allowed = set(g.user_scope["report_keys"])
+    groups: dict[str, list[tuple[str, dict]]] = {}
+    for group_name, reports in grouped_reports().items():
+        filtered = [(report_key, definition) for report_key, definition in reports if report_key in allowed]
+        if filtered:
+            groups[group_name] = filtered
+    return groups
+
+
+def visible_report_keys() -> set[str]:
+    return set(g.user_scope["report_keys"])
+
+
+def can_view_report_key(report_key: str) -> bool:
+    return report_key in visible_report_keys()
+
+
+def can_submit_report_key(report_key: str) -> bool:
+    return g.user_scope["can_submit_reports"] and report_key in visible_report_keys()
+
+
+def settings_actions_for_report(report_key: str, snapshot: dict | None = None) -> list[dict]:
+    actions = []
+    if snapshot is not None:
+        actions.append({"label": "Открыть", "url": url_for("main.report_detail", report_id=snapshot["id"]), "kind": "secondary"})
+        actions.append({"label": "История", "url": f"{dashboard_url_with_state()}#{report_key}", "kind": "ghost"})
+        if snapshot["submitted_by"] == g.user["id"] or g.user["is_admin"]:
+            actions.append({"label": "Изменить", "url": url_for("main.edit_report", report_id=snapshot["id"]), "kind": "ghost"})
+    else:
+        actions.append({"label": "История", "url": f"{dashboard_url_with_state()}#{report_key}", "kind": "ghost"})
+    if can_submit_report_key(report_key):
+        actions.append({"label": "Заполнить", "url": url_for("main.report_form", report_key=report_key), "kind": "primary"})
+    return actions
+
+
+def stored_dashboard_filters() -> dict:
+    saved = session.get(DASHBOARD_FILTERS_SESSION_KEY, {})
+    if not isinstance(saved, dict):
+        return {}
+    return {
+        "period": saved.get("period"),
+        "day_date": saved.get("day_date"),
+        "week_start": saved.get("week_start"),
+        "month_start": saved.get("month_start"),
+    }
+
+
+def remember_dashboard_filters(selection: dict) -> None:
+    session[DASHBOARD_FILTERS_SESSION_KEY] = {
+        "period": selection["selected_period"],
+        "day_date": selection["day_value"],
+        "week_start": selection["week_value"],
+        "month_start": selection["month_value"],
+    }
+
+
+def dashboard_url_with_state(**overrides) -> str:
+    params = {key: value for key, value in stored_dashboard_filters().items() if value}
+    params.update({key: value for key, value in overrides.items() if value is not None})
+    return url_for("main.dashboard", **params)
+
+
 def purge_expired_data() -> None:
     retention_days = int(current_app.config.get("DATA_RETENTION_DAYS", 62))
     cutoff = date.today() - timedelta(days=retention_days)
@@ -596,8 +697,15 @@ def load_logged_in_user():
     user_id = session.get("user_id")
     if user_id is None:
         g.user = None
+        g.user_scope = build_user_scope(None)
     else:
         g.user = get_db().execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        g.user_scope = build_user_scope(g.user)
+
+
+@bp.app_context_processor
+def inject_navigation_helpers():
+    return {"dashboard_url": dashboard_url_with_state}
 
 
 @bp.before_app_request
@@ -625,7 +733,9 @@ def register():
         password = request.form["password"]
         error = None
         if not full_name or not position or not password:
-            error = "Заполните имя, должность и пароль."
+            error = "Заполните имя, зону ответственности и пароль."
+        elif position not in responsibility_zones():
+            error = "Выберите корректную зону ответственности."
         db = get_db()
         existing = db.execute(
             "SELECT id FROM users WHERE lower(full_name) = lower(?)",
@@ -653,7 +763,7 @@ def register():
             flash("Регистрация завершена. Теперь можно войти.", "success")
             return redirect(url_for("main.login"))
         flash(error, "error")
-    return render_template("register.html")
+    return render_template("register.html", responsibility_zones=responsibility_zones())
 
 
 @bp.route("/login", methods=("GET", "POST"))
@@ -692,16 +802,21 @@ def logout():
 @login_required
 def dashboard():
     selection = resolve_dashboard_period_selection(request.args)
+    remember_dashboard_filters(selection)
     snapshots = snapshots_for_period(
         selection["selected_period"],
         selection["period_start"],
         selection["period_end"],
     )
+    filtered_snapshots = {report_key: report for report_key, report in snapshots.items() if can_view_report_key(report_key)}
+    grouped_rows = grouped_report_rows()
+    filtered_grouped_rows = {report_key: reports for report_key, reports in grouped_rows.items() if can_view_report_key(report_key)}
     return render_template(
         "dashboard.html",
-        report_groups=grouped_reports(),
+        report_groups=visible_report_groups(),
         period_labels=PERIOD_LABELS,
-        snapshots=snapshots,
+        snapshots=filtered_snapshots,
+        grouped_rows=filtered_grouped_rows,
         **selection,
     )
 
@@ -709,14 +824,7 @@ def dashboard():
 @bp.route("/reports")
 @login_required
 def reports_archive():
-    grouped_rows = grouped_report_rows()
-    return render_template(
-        "reports_archive.html",
-        report_groups=grouped_reports(),
-        grouped_rows=grouped_rows,
-        period_labels=PERIOD_LABELS,
-        latest_reports=latest_reports(8),
-    )
+    return redirect(url_for("main.dashboard"))
 
 
 @bp.route("/reports/<report_key>/new", methods=("GET", "POST"))
@@ -724,6 +832,8 @@ def reports_archive():
 def report_form(report_key: str):
     if report_key not in dict(all_reports()):
         abort(404)
+    if not can_submit_report_key(report_key):
+        abort(403)
     definition = get_report_definition(report_key)
     if request.method == "POST":
         period_type = request.form["period_type"]
@@ -763,6 +873,8 @@ def report_form(report_key: str):
 @login_required
 def report_detail(report_id: int):
     report = load_report_or_404(report_id)
+    if not can_view_report_key(report["report_key"]):
+        abort(403)
     return render_template("report_detail.html", report=report)
 
 
@@ -770,6 +882,8 @@ def report_detail(report_id: int):
 @login_required
 def edit_report(report_id: int):
     report = load_report_or_404(report_id)
+    if not can_view_report_key(report["report_key"]):
+        abort(403)
     ensure_report_access(report)
     if request.method == "POST":
         try:
@@ -808,12 +922,14 @@ def edit_report(report_id: int):
 @login_required
 def delete_report(report_id: int):
     report = load_report_or_404(report_id)
+    if not can_view_report_key(report["report_key"]):
+        abort(403)
     ensure_report_access(report)
     db = get_db()
     db.execute("DELETE FROM reports WHERE id = ?", (report_id,))
     db.commit()
     flash("Отчет удален.", "success")
-    next_url = request.form.get("next") or url_for("main.reports_archive")
+    next_url = request.form.get("next") or dashboard_url_with_state()
     return redirect(next_url)
 
 
@@ -822,6 +938,8 @@ def delete_report(report_id: int):
 def download_template(report_key: str, period_type: str):
     if report_key not in dict(all_reports()) or period_type not in PERIOD_LABELS:
         abort(404)
+    if not can_submit_report_key(report_key):
+        abort(403)
     definition = get_report_definition(report_key)
     file_bytes = create_report_template(report_key, definition, period_type)
     filename = f"{report_key}-{period_type}-template.xlsx"
@@ -838,6 +956,8 @@ def download_template(report_key: str, period_type: str):
 def import_report(report_key: str):
     if report_key not in dict(all_reports()):
         abort(404)
+    if not can_submit_report_key(report_key):
+        abort(403)
     upload = request.files.get("report_file")
     period_type = request.form["period_type"]
     report_date = request.form["report_date"]
@@ -871,8 +991,12 @@ def import_report(report_key: str):
 @bp.route("/dashboards", methods=("GET", "POST"))
 @login_required
 def dashboards():
+    if not g.user_scope["can_view_dashboards"]:
+        abort(403)
     db = get_db()
     if request.method == "POST":
+        if not g.user_scope["can_upload_dashboards"]:
+            abort(403)
         period_type = request.form["period_type"]
         period_name = request.form["period_name"].strip()
         html_file = request.files.get("dashboard_file")
@@ -943,6 +1067,8 @@ def dashboards():
 @bp.route("/dashboards/<int:dashboard_id>")
 @login_required
 def dashboard_view(dashboard_id: int):
+    if not g.user_scope["can_view_dashboards"]:
+        abort(403)
     row = load_dashboard_or_404(dashboard_id)
     return render_template("dashboard_view.html", dashboard=row)
 
@@ -950,6 +1076,8 @@ def dashboard_view(dashboard_id: int):
 @bp.route("/dashboards/<int:dashboard_id>/edit", methods=("GET", "POST"))
 @login_required
 def dashboard_edit(dashboard_id: int):
+    if not g.user_scope["can_upload_dashboards"]:
+        abort(403)
     dashboard = load_dashboard_or_404(dashboard_id)
     ensure_dashboard_access(dashboard)
     if request.method == "POST":
@@ -995,6 +1123,8 @@ def dashboard_edit(dashboard_id: int):
 @bp.route("/dashboards/<int:dashboard_id>/delete", methods=("POST",))
 @login_required
 def dashboard_delete(dashboard_id: int):
+    if not g.user_scope["can_upload_dashboards"]:
+        abort(403)
     dashboard = load_dashboard_or_404(dashboard_id)
     ensure_dashboard_access(dashboard)
     file_path = Path(current_app.config["DASHBOARD_UPLOAD_FOLDER"]) / dashboard["filename"]
@@ -1011,4 +1141,6 @@ def dashboard_delete(dashboard_id: int):
 @bp.route("/dashboards/files/<path:filename>")
 @login_required
 def dashboard_file(filename: str):
+    if not g.user_scope["can_view_dashboards"]:
+        abort(403)
     return send_from_directory(current_app.config["DASHBOARD_UPLOAD_FOLDER"], filename)

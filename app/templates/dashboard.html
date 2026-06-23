@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Главная{% endblock %}
+{% block title %}Отчеты{% endblock %}
 {% block topbar_title %}
 <div class="page-heading">
     <div class="eyebrow">Система отчетов</div>
-    <h1>Главная</h1>
+    <h1>Отчеты</h1>
 </div>
 {% endblock %}
 {% block content %}
@@ -13,10 +13,11 @@
             <h2>Период</h2>
             <span class="section-note">{{ current_label }}</span>
         </div>
-        <div class="hero-actions">
-            <a class="btn btn-ghost" href="{{ url_for('main.reports_archive') }}">Все отчеты</a>
-            <a class="btn btn-secondary" href="{{ url_for('main.dashboards') }}">HTML-дашборды</a>
-        </div>
+        {% if g.user_scope["can_view_dashboards"] %}
+            <div class="hero-actions">
+                <a class="btn btn-secondary" href="{{ url_for('main.dashboards') }}">HTML-дашборды</a>
+            </div>
+        {% endif %}
     </div>
     <div class="period-switcher">
         {% for key, label in period_labels.items() %}
@@ -56,7 +57,7 @@
 <section class="panel">
     <div class="section-head">
         <h2>Блоки отчетов</h2>
-        <span class="section-note">Если отчет уже заполнен за выбранный период, здесь сразу видны его данные</span>
+        <span class="section-note">Видны только доступные вам зоны. Администратор видит все блоки и действия.</span>
     </div>
     <div class="report-catalog">
         {% for group_name, reports in report_groups.items() %}
@@ -72,9 +73,9 @@
                                     <p>{{ definition.description }}</p>
                                 </div>
                                 {% if snapshot %}
-                                    <span class="catalog-status catalog-status-icon" title="Заполнено">✓</span>
+                                    <span class="catalog-status catalog-status-icon" title="Есть отчет за период">✓</span>
                                 {% else %}
-                                    <span class="catalog-status catalog-status-empty catalog-status-icon" title="Нет данных">✕</span>
+                                    <span class="catalog-status catalog-status-empty catalog-status-icon" title="Нет отчета за период">✕</span>
                                 {% endif %}
                             </div>
                             {% if snapshot %}
@@ -87,22 +88,101 @@
                                         </div>
                                     {% endfor %}
                                 </div>
-                                <div class="catalog-actions">
-                                    <a class="btn btn-secondary" href="{{ url_for('main.report_detail', report_id=snapshot.id) }}">Открыть</a>
-                                    <a class="btn btn-ghost" href="{{ url_for('main.report_form', report_key=report_key) }}">Новый отчет</a>
-                                    <a class="btn btn-ghost" href="{{ url_for('main.reports_archive') }}#{{ report_key }}">История</a>
-                                </div>
                             {% else %}
-                                <div class="empty-state compact-empty">За этот период отчет еще не заполнен.</div>
-                                <div class="catalog-actions">
-                                    <a class="btn btn-primary" href="{{ url_for('main.report_form', report_key=report_key) }}">Заполнить</a>
-                                    <a class="btn btn-ghost" href="{{ url_for('main.reports_archive') }}#{{ report_key }}">История</a>
-                                </div>
+                                <div class="empty-state compact-empty">За этот период данных пока нет.</div>
                             {% endif %}
+
+                            <details class="settings-drawer">
+                                <summary class="settings-trigger" aria-label="Действия по отчету">
+                                    <span>⚙</span>
+                                </summary>
+                                <div class="settings-panel">
+                                    {% if snapshot %}
+                                        <a class="btn btn-secondary" href="{{ url_for('main.report_detail', report_id=snapshot.id) }}">Открыть</a>
+                                        {% if snapshot.submitted_by == g.user["id"] or g.user["is_admin"] %}
+                                            <a class="btn btn-ghost" href="{{ url_for('main.edit_report', report_id=snapshot.id) }}">Изменить</a>
+                                        {% endif %}
+                                    {% endif %}
+                                    {% if g.user_scope["can_submit_reports"] %}
+                                        <a class="btn btn-primary" href="{{ url_for('main.report_form', report_key=report_key) }}">
+                                            {% if snapshot %}Новый отчет{% else %}Заполнить{% endif %}
+                                        </a>
+                                    {% endif %}
+                                    <a class="btn btn-ghost" href="#{{ report_key }}">История</a>
+                                </div>
+                            </details>
                         </article>
                     {% endfor %}
                 </div>
             </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="section-head">
+        <h2>История по блокам</h2>
+        <span class="section-note">Сверху текущий период, ниже вся доступная история по вашим зонам.</span>
+    </div>
+
+    <div class="accordion-stack">
+        {% for group_name, reports in report_groups.items() %}
+            <details class="accordion" {% if loop.first %}open{% endif %}>
+                <summary>{{ group_name }}</summary>
+                <div class="accordion-body">
+                    {% for report_key, definition in reports %}
+                        <details class="accordion nested" id="{{ report_key }}">
+                            <summary>
+                                <span>{{ definition.title }}</span>
+                                <span class="summary-note">{{ definition.description }}</span>
+                            </summary>
+                            <div class="accordion-body">
+                                {% if g.user_scope["can_submit_reports"] %}
+                                    <div class="inline-actions archive-primary-action">
+                                        <a class="btn btn-primary" href="{{ url_for('main.report_form', report_key=report_key) }}">Заполнить отчет</a>
+                                    </div>
+                                {% endif %}
+                                {% for report in grouped_rows.get(report_key, []) %}
+                                    <article class="report-row">
+                                        <div class="report-row-head">
+                                            <div>
+                                                <h3>{{ report.period_label }}</h3>
+                                                <div class="muted">{{ period_labels[report.period_type] }} · {{ report.submitted_by_name }} · {{ report.submitted_by_position }}</div>
+                                            </div>
+                                            <a class="btn btn-secondary" href="{{ url_for('main.report_detail', report_id=report.id) }}">Открыть</a>
+                                        </div>
+                                        <div class="mini-metrics">
+                                            {% for metric in report.summary_metrics[:4] %}
+                                                <div class="mini-metric">
+                                                    <span>{{ metric.label }}</span>
+                                                    <strong>{{ format_metric(metric.fact, metric.unit) }}</strong>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <details class="settings-drawer settings-drawer-inline">
+                                            <summary class="settings-trigger" aria-label="Действия по сохраненному отчету">
+                                                <span>⚙</span>
+                                            </summary>
+                                            <div class="settings-panel">
+                                                <a class="btn btn-secondary" href="{{ url_for('main.report_detail', report_id=report.id) }}">Открыть</a>
+                                                {% if report.submitted_by == g.user["id"] or g.user["is_admin"] %}
+                                                    <a class="btn btn-ghost" href="{{ url_for('main.edit_report', report_id=report.id) }}">Изменить</a>
+                                                    <form method="post" action="{{ url_for('main.delete_report', report_id=report.id) }}" class="inline-form" onsubmit="return confirm('Удалить этот отчет?');">
+                                                        <input type="hidden" name="next" value="{{ dashboard_url() }}#{{ report_key }}">
+                                                        <button class="btn btn-danger" type="submit">Удалить</button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        </details>
+                                    </article>
+                                {% else %}
+                                    <div class="empty-state">Для этого блока еще нет сохранений.</div>
+                                {% endfor %}
+                            </div>
+                        </details>
+                    {% endfor %}
+                </div>
+            </details>
         {% endfor %}
     </div>
 </section>

@@ -6,16 +6,16 @@
         <section class="auth-showcase">
             <div class="auth-kicker">Новый пользователь</div>
             <h1>Регистрация сотрудника для заполнения отчетов</h1>
-            <p>Достаточно имени, должности и пароля. После входа сотрудник сразу выбирает свой блок отчетности и приступает к заполнению.</p>
+            <p>Достаточно имени, зоны ответственности и пароля. После входа сотрудник увидит только свой блок отчетности.</p>
 
             <div class="auth-points">
                 <div class="auth-point">
-                    <strong>Должность</strong>
-                    <span>Сохраняется вместе с каждым отчетом.</span>
+                    <strong>Зона</strong>
+                    <span>Определяет, какие отчеты будут доступны сотруднику.</span>
                 </div>
                 <div class="auth-point">
                     <strong>История</strong>
-                    <span>Все отчеты легко отследить по автору и периоду.</span>
+                    <span>Администратор и управление видят все сохраненные блоки.</span>
                 </div>
                 <div class="auth-point">
                     <strong>Удобство</strong>
@@ -35,8 +35,13 @@
                     <input type="text" name="full_name" placeholder="Анна Иванова" required>
                 </label>
                 <label class="field">
-                    <span>Должность</span>
-                    <input type="text" name="position" placeholder="Аналитик Ozon" required>
+                    <span>Зона ответственности</span>
+                    <select name="position" required>
+                        <option value="">Выберите зону</option>
+                        {% for key, zone in responsibility_zones.items() %}
+                            <option value="{{ key }}">{{ zone.label }}</option>
+                        {% endfor %}
+                    </select>
                 </label>
                 <label class="field">
                     <span>Пароль</span>

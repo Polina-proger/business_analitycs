@@ -12,25 +12,26 @@
         {% if g.user %}
             <aside class="sidebar">
                 <div class="brand-block">
-                    <a class="brand-logo" href="{{ url_for('main.dashboard') }}" aria-label="Multi Delight">
+                    <a class="brand-logo" href="{{ dashboard_url() }}" aria-label="Multi Delight">
                         <img src="{{ url_for('static', filename='img/logo-md-full.png') }}" alt="Multi Delight">
                     </a>
-                    <a class="brand-logo brand-logo-secondary" href="{{ url_for('main.dashboard') }}" aria-label="Havenroot">
+                    <a class="brand-logo brand-logo-secondary" href="{{ dashboard_url() }}" aria-label="Havenroot">
                         <img src="{{ url_for('static', filename='img/logo-havenroot.png') }}" alt="Havenroot">
                     </a>
-                    <a class="brand-title" href="{{ url_for('main.dashboard') }}">Аналитика бизнеса</a>
+                    <a class="brand-title" href="{{ dashboard_url() }}">Аналитика бизнеса</a>
                 </div>
 
                 <nav class="nav-stack">
-                    <a class="nav-link" href="{{ url_for('main.dashboard') }}">Главная</a>
-                    <a class="nav-link" href="{{ url_for('main.reports_archive') }}">Все отчеты</a>
-                    <a class="nav-link" href="{{ url_for('main.dashboards') }}">HTML-дашборды</a>
+                    <a class="nav-link" href="{{ dashboard_url() }}">Отчеты</a>
+                    {% if g.user_scope["can_view_dashboards"] %}
+                        <a class="nav-link" href="{{ url_for('main.dashboards') }}">HTML-дашборды</a>
+                    {% endif %}
                     <a class="nav-link" href="{{ url_for('main.logout') }}">Выйти</a>
                 </nav>
 
                 <div class="user-panel">
                     <div class="user-name">{{ g.user["full_name"] }}</div>
-                    <div class="user-role">{{ g.user["position"] }}</div>
+                    <div class="user-role">{{ g.user_scope["zone_label"] }}</div>
                 </div>
             </aside>
         {% endif %}

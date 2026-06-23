@@ -15,7 +15,7 @@
         </div>
         <div class="inline-actions">
             <a class="btn btn-secondary" href="{{ url_for('main.dashboards') }}">Назад</a>
-            {% if dashboard["uploaded_by"] == g.user["id"] or g.user["is_admin"] %}
+            {% if g.user_scope["can_upload_dashboards"] and (dashboard["uploaded_by"] == g.user["id"] or g.user["is_admin"]) %}
                 <a class="btn btn-primary" href="{{ url_for('main.dashboard_edit', dashboard_id=dashboard['id']) }}">Изменить</a>
                 <form method="post" action="{{ url_for('main.dashboard_delete', dashboard_id=dashboard['id']) }}" class="inline-form" onsubmit="return confirm('Удалить этот дашборд?');">
                     <input type="hidden" name="next" value="{{ url_for('main.dashboards') }}">

@@ -75,6 +75,51 @@ REPORT_DEFINITIONS = {
     },
 }
 
+RESPONSIBILITY_ZONES = {
+    "ozon": {
+        "label": "Ozon",
+        "report_keys": ["ozon"],
+        "can_submit_reports": True,
+        "can_view_dashboards": False,
+        "can_upload_dashboards": False,
+    },
+    "wb": {
+        "label": "WB",
+        "report_keys": ["wb"],
+        "can_submit_reports": True,
+        "can_view_dashboards": False,
+        "can_upload_dashboards": False,
+    },
+    "finance": {
+        "label": "Финансы",
+        "report_keys": ["finance"],
+        "can_submit_reports": True,
+        "can_view_dashboards": False,
+        "can_upload_dashboards": False,
+    },
+    "procurement": {
+        "label": "Закупки",
+        "report_keys": ["procurement"],
+        "can_submit_reports": True,
+        "can_view_dashboards": False,
+        "can_upload_dashboards": False,
+    },
+    "logistics": {
+        "label": "Логистика",
+        "report_keys": ["logistics"],
+        "can_submit_reports": True,
+        "can_view_dashboards": False,
+        "can_upload_dashboards": False,
+    },
+    "management": {
+        "label": "Управление",
+        "report_keys": list(REPORT_DEFINITIONS.keys()),
+        "can_submit_reports": False,
+        "can_view_dashboards": True,
+        "can_upload_dashboards": False,
+    },
+}
+
 PERIOD_LABELS = {
     "daily": "День",
     "weekly": "Неделя",
@@ -95,6 +140,18 @@ def grouped_reports() -> dict[str, list[tuple[str, dict]]]:
     for report_key, definition in REPORT_DEFINITIONS.items():
         groups.setdefault(definition["group"], []).append((report_key, definition))
     return groups
+
+
+def all_report_keys() -> list[str]:
+    return list(REPORT_DEFINITIONS.keys())
+
+
+def responsibility_zones() -> dict[str, dict]:
+    return RESPONSIBILITY_ZONES
+
+
+def get_zone_definition(zone_key: str) -> dict | None:
+    return RESPONSIBILITY_ZONES.get(zone_key)
 
 
 def default_period_bounds(period_type: str, anchor: date) -> tuple[date, date]:
@@ -122,4 +179,3 @@ def build_period_label(period_type: str, start: date, end: date) -> str:
 def metric_lookup(report_key: str) -> dict[str, dict]:
     definition = get_report_definition(report_key)
     return {metric["code"]: metric for metric in definition["metrics"]}
-

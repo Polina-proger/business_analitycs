@@ -13,7 +13,7 @@
             <h2>{% if report %}Редактирование{% else %}Новый отчет{% endif %}</h2>
             <span class="section-note">{{ definition.description }}</span>
         </div>
-        <a class="btn btn-secondary" href="{{ url_for('main.reports_archive') }}">К архиву</a>
+        <a class="btn btn-secondary" href="{{ dashboard_url() }}">К отчетам</a>
     </div>
 
     <div class="download-strip">

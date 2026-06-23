@@ -23,7 +23,7 @@
                     <div class="inline-actions">
                         <a class="btn btn-secondary" href="{{ url_for('main.dashboard_view', dashboard_id=item['id']) }}">Открыть</a>
                         <a class="btn btn-ghost" href="{{ url_for('main.dashboard_file', filename=item['filename']) }}" target="_blank">Raw HTML</a>
-                        {% if item["uploaded_by"] == g.user["id"] or g.user["is_admin"] %}
+                        {% if g.user_scope["can_upload_dashboards"] and (item["uploaded_by"] == g.user["id"] or g.user["is_admin"]) %}
                             <a class="btn btn-ghost" href="{{ url_for('main.dashboard_edit', dashboard_id=item['id']) }}">Изменить</a>
                             <form method="post" action="{{ url_for('main.dashboard_delete', dashboard_id=item['id']) }}" class="inline-form" onsubmit="return confirm('Удалить этот дашборд?');">
                                 <input type="hidden" name="next" value="{{ url_for('main.dashboards') }}">
@@ -71,7 +71,7 @@
                 <div class="inline-actions">
                     <a class="btn btn-secondary" href="{{ url_for('main.dashboard_view', dashboard_id=selected_dashboard['id']) }}">Открыть</a>
                     <a class="btn btn-ghost" href="{{ url_for('main.dashboard_file', filename=selected_dashboard['filename']) }}" target="_blank">Raw HTML</a>
-                    {% if selected_dashboard["uploaded_by"] == g.user["id"] or g.user["is_admin"] %}
+                    {% if g.user_scope["can_upload_dashboards"] and (selected_dashboard["uploaded_by"] == g.user["id"] or g.user["is_admin"]) %}
                         <a class="btn btn-ghost" href="{{ url_for('main.dashboard_edit', dashboard_id=selected_dashboard['id']) }}">Изменить</a>
                         <form method="post" action="{{ url_for('main.dashboard_delete', dashboard_id=selected_dashboard['id']) }}" class="inline-form" onsubmit="return confirm('Удалить этот дашборд?');">
                             <input type="hidden" name="next" value="{{ url_for('main.dashboards', type=selected_type, selected_dashboard_id=selected_dashboard['id']) }}">
@@ -106,7 +106,7 @@
                         <div class="inline-actions">
                             <a class="btn btn-secondary" href="{{ url_for('main.dashboard_view', dashboard_id=item['id']) }}">Открыть</a>
                             <a class="btn btn-ghost" href="{{ url_for('main.dashboard_file', filename=item['filename']) }}" target="_blank">Raw HTML</a>
-                            {% if item["uploaded_by"] == g.user["id"] or g.user["is_admin"] %}
+                            {% if g.user_scope["can_upload_dashboards"] and (item["uploaded_by"] == g.user["id"] or g.user["is_admin"]) %}
                                 <a class="btn btn-ghost" href="{{ url_for('main.dashboard_edit', dashboard_id=item['id']) }}">Изменить</a>
                                 <form method="post" action="{{ url_for('main.dashboard_delete', dashboard_id=item['id']) }}" class="inline-form" onsubmit="return confirm('Удалить этот дашборд?');">
                                     <input type="hidden" name="next" value="{{ url_for('main.dashboards') }}">
@@ -123,31 +123,40 @@
     </details>
 </section>
 
-<section class="panel">
-    <div class="section-head">
-        <div>
-            <h2>Загрузка weekly/monthly HTML</h2>
-            <span class="section-note">Название формируется автоматически из типа и периода</span>
+{% if g.user_scope["can_upload_dashboards"] %}
+    <section class="panel">
+        <div class="section-head">
+            <div>
+                <h2>Загрузка weekly/monthly HTML</h2>
+                <span class="section-note">Название формируется автоматически из типа и периода</span>
+            </div>
+            <div class="dashboard-title-preview" data-dashboard-title-preview>Weekly · 08.06-14.06</div>
         </div>
-        <div class="dashboard-title-preview" data-dashboard-title-preview>Weekly · 08.06-14.06</div>
-    </div>
-    <form method="post" enctype="multipart/form-data" class="form-grid">
-        <label class="field">
-            <span>Тип</span>
-            <select name="period_type" data-dashboard-period-type>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-            </select>
-        </label>
-        <label class="field">
-            <span>Период</span>
-            <input type="text" name="period_name" data-dashboard-period-name placeholder="08.06-14.06 или 06.2026" required>
-        </label>
-        <label class="field field-full">
-            <span>HTML-файл</span>
-            <input type="file" name="dashboard_file" accept=".html" required>
-        </label>
-        <button class="btn btn-primary" type="submit">Загрузить</button>
-    </form>
-</section>
+        <form method="post" enctype="multipart/form-data" class="form-grid">
+            <label class="field">
+                <span>Тип</span>
+                <select name="period_type" data-dashboard-period-type>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </label>
+            <label class="field">
+                <span>Период</span>
+                <input type="text" name="period_name" data-dashboard-period-name placeholder="08.06-14.06 или 06.2026" required>
+            </label>
+            <label class="field field-full">
+                <span>HTML-файл</span>
+                <input type="file" name="dashboard_file" accept=".html" required>
+            </label>
+            <button class="btn btn-primary" type="submit">Загрузить</button>
+        </form>
+    </section>
+{% else %}
+    <section class="panel">
+        <div class="section-head">
+            <h2>HTML-дашборды</h2>
+            <span class="section-note">Для зоны управления здесь доступен только просмотр уже загруженных файлов.</span>
+        </div>
+    </section>
+{% endif %}
 {% endblock %}
