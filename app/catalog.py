@@ -114,7 +114,7 @@ RESPONSIBILITY_ZONES = {
     "management": {
         "label": "Управление",
         "report_keys": list(REPORT_DEFINITIONS.keys()),
-        "can_submit_reports": False,
+        "can_submit_reports": True,
         "can_view_dashboards": True,
         "can_upload_dashboards": False,
     },
