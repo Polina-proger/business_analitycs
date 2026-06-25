@@ -36,7 +36,6 @@ from .catalog import (
     get_zone_definition,
     grouped_reports,
     metric_lookup,
-    responsibility_zones,
 )
 from .db import get_db
 from .excel import create_report_template, parse_report_workbook
@@ -727,43 +726,7 @@ def index():
 
 @bp.route("/register", methods=("GET", "POST"))
 def register():
-    if request.method == "POST":
-        full_name = request.form["full_name"].strip()
-        position = request.form["position"].strip()
-        password = request.form["password"]
-        error = None
-        if not full_name or not position or not password:
-            error = "Заполните имя, зону ответственности и пароль."
-        elif position not in responsibility_zones():
-            error = "Выберите корректную зону ответственности."
-        db = get_db()
-        existing = db.execute(
-            "SELECT id FROM users WHERE lower(full_name) = lower(?)",
-            (full_name,),
-        ).fetchone()
-        if existing is not None:
-            error = "Пользователь с таким именем уже существует. Используйте уникальное имя."
-        if error is None:
-            users_count = db.execute("SELECT COUNT(*) AS total FROM users").fetchone()["total"]
-            db.execute(
-                """
-                INSERT INTO users (full_name, email, position, password_hash, is_admin, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    full_name,
-                    f"user-{uuid.uuid4().hex[:12]}@local",
-                    position,
-                    generate_password_hash(password, method=PASSWORD_HASH_METHOD),
-                    1 if users_count == 0 else 0,
-                    datetime.now().isoformat(timespec="seconds"),
-                ),
-            )
-            db.commit()
-            flash("Регистрация завершена. Теперь можно войти.", "success")
-            return redirect(url_for("main.login"))
-        flash(error, "error")
-    return render_template("register.html", responsibility_zones=responsibility_zones())
+    return redirect(url_for("main.login"))
 
 
 @bp.route("/login", methods=("GET", "POST"))
