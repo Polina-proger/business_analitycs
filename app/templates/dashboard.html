@@ -163,18 +163,18 @@
                                             <summary class="settings-trigger" aria-label="Действия по сохраненному отчету">
                                                 <span>⚙</span>
                                             </summary>
-                                            <div class="settings-panel">
-                                                <a class="btn btn-secondary" href="{{ url_for('main.report_detail', report_id=report.id) }}">Открыть</a>
-                                                {% if report.submitted_by == g.user["id"] or g.user["is_admin"] %}
-                                                    <a class="btn btn-ghost" href="{{ url_for('main.edit_report', report_id=report.id) }}">Изменить</a>
-                                                    <form method="post" action="{{ url_for('main.delete_report', report_id=report.id) }}" class="inline-form" onsubmit="return confirm('Удалить этот отчет?');">
-                                                        <input type="hidden" name="next" value="{{ dashboard_url() }}#{{ report_key }}">
-                                                        <button class="btn btn-danger" type="submit">Удалить</button>
-                                                    </form>
-                                                {% endif %}
-                                            </div>
-                                        </details>
-                                    </article>
+                                    <div class="settings-panel">
+                                        <a class="btn btn-secondary" href="{{ url_for('main.report_detail', report_id=report.id) }}">Открыть</a>
+                                        {% if report.submitted_by == g.user["id"] or g.user["is_admin"] %}
+                                            <a class="btn btn-ghost" href="{{ url_for('main.edit_report', report_id=report.id) }}">Изменить</a>
+                                        {% endif %}
+                                        <form method="post" action="{{ url_for('main.delete_report', report_id=report.id) }}" class="inline-form" onsubmit="return confirm('Удалить этот отчет?');">
+                                            <input type="hidden" name="next" value="{{ dashboard_url() }}#{{ report_key }}">
+                                            <button class="btn btn-danger" type="submit">Удалить</button>
+                                        </form>
+                                    </div>
+                                </details>
+                            </article>
                                 {% else %}
                                     <div class="empty-state">Для этого блока еще нет сохранений.</div>
                                 {% endfor %}

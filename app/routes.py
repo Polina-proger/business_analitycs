@@ -887,7 +887,6 @@ def delete_report(report_id: int):
     report = load_report_or_404(report_id)
     if not can_view_report_key(report["report_key"]):
         abort(403)
-    ensure_report_access(report)
     db = get_db()
     db.execute("DELETE FROM reports WHERE id = ?", (report_id,))
     db.commit()

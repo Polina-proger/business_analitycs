@@ -17,11 +17,11 @@
             <a class="btn btn-secondary" href="{{ dashboard_url() }}">К отчетам</a>
             {% if report.submitted_by == g.user["id"] or g.user["is_admin"] %}
                 <a class="btn btn-primary" href="{{ url_for('main.edit_report', report_id=report.id) }}">Изменить</a>
-                <form method="post" action="{{ url_for('main.delete_report', report_id=report.id) }}" class="inline-form" onsubmit="return confirm('Удалить этот отчет?');">
-                    <input type="hidden" name="next" value="{{ dashboard_url() }}">
-                    <button class="btn btn-danger" type="submit">Удалить</button>
-                </form>
             {% endif %}
+            <form method="post" action="{{ url_for('main.delete_report', report_id=report.id) }}" class="inline-form" onsubmit="return confirm('Удалить этот отчет?');">
+                <input type="hidden" name="next" value="{{ dashboard_url() }}">
+                <button class="btn btn-danger" type="submit">Удалить</button>
+            </form>
         </div>
     </div>
 
