@@ -11,7 +11,6 @@
     <div class="panel">
         <div class="section-head">
             <h2>Быстрый выбор</h2>
-            <span class="section-note">Сначала можно открыть один из недавних файлов</span>
         </div>
         <div class="activity-list">
             {% for item in recent_dashboards[:3] %}
@@ -41,7 +40,6 @@
     <div class="panel">
         <div class="section-head">
             <h2>Выбор из прошлых</h2>
-            <span class="section-note">Выберите `weekly` или `monthly`, затем нужное название</span>
         </div>
         <form method="get" class="dashboard-picker-form">
             <label class="field">
@@ -91,7 +89,6 @@
 <section class="panel">
     <div class="section-head">
         <h2>Недавно загруженные</h2>
-        <span class="section-note">5 последних файлов, список можно раскрыть</span>
     </div>
     <details class="accordion" open>
         <summary>Показать последние загрузки</summary>
@@ -126,10 +123,7 @@
 {% if g.user_scope["can_upload_dashboards"] %}
     <section class="panel">
         <div class="section-head">
-            <div>
-                <h2>Загрузка weekly/monthly HTML</h2>
-                <span class="section-note">Название формируется автоматически из типа и периода</span>
-            </div>
+            <h2>Загрузка weekly/monthly HTML</h2>
             <div class="dashboard-title-preview" data-dashboard-title-preview>Weekly · 08.06-14.06</div>
         </div>
         <form method="post" enctype="multipart/form-data" class="form-grid">
@@ -155,7 +149,6 @@
     <section class="panel">
         <div class="section-head">
             <h2>HTML-дашборды</h2>
-            <span class="section-note">Для зоны управления здесь доступен только просмотр уже загруженных файлов.</span>
         </div>
     </section>
 {% endif %}
