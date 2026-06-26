@@ -52,6 +52,91 @@ document.addEventListener("change", (event) => {
 
 updateDashboardTitlePreview();
 
+function formatDateInputValue(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
+function buildPeriodBounds(periodType, reportDateValue) {
+    if (!periodType || !reportDateValue) {
+        return null;
+    }
+    const [year, month, day] = reportDateValue.split("-").map(Number);
+    if (!year || !month || !day) {
+        return null;
+    }
+    const anchor = new Date(year, month - 1, day);
+    if (Number.isNaN(anchor.getTime())) {
+        return null;
+    }
+    let start;
+    let end;
+    if (periodType === "daily") {
+        start = new Date(anchor);
+        end = new Date(anchor);
+    } else if (periodType === "weekly") {
+        const weekday = (anchor.getDay() + 6) % 7;
+        start = new Date(anchor);
+        start.setDate(anchor.getDate() - weekday);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+    } else {
+        start = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+        end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+    }
+    return {
+        start: formatDateInputValue(start),
+        end: formatDateInputValue(end),
+    };
+}
+
+function bindPeriodAutoFill() {
+    const forms = new Map();
+    document.querySelectorAll("[data-period-form]").forEach((element) => {
+        const formKey = element.getAttribute("data-period-form");
+        if (!forms.has(formKey)) {
+            forms.set(formKey, {});
+        }
+        const registry = forms.get(formKey);
+        if (element.matches("[data-period-type]")) {
+            registry.typeField = element;
+        } else if (element.matches("[data-report-date]")) {
+            registry.reportDateField = element;
+        } else if (element.matches("[data-period-start]")) {
+            registry.startField = element;
+        } else if (element.matches("[data-period-end]")) {
+            registry.endField = element;
+        }
+    });
+
+    function syncFormBounds(registry) {
+        if (!registry?.typeField || !registry?.reportDateField || !registry?.startField || !registry?.endField) {
+            return;
+        }
+        const bounds = buildPeriodBounds(registry.typeField.value, registry.reportDateField.value);
+        if (!bounds) {
+            return;
+        }
+        registry.startField.value = bounds.start;
+        registry.endField.value = bounds.end;
+    }
+
+    forms.forEach((registry) => {
+        syncFormBounds(registry);
+        [registry.typeField, registry.reportDateField].forEach((field) => {
+            if (!field) {
+                return;
+            }
+            field.addEventListener("change", () => syncFormBounds(registry));
+            field.addEventListener("input", () => syncFormBounds(registry));
+        });
+    });
+}
+
+bindPeriodAutoFill();
+
 function bindArticleRows() {
     const container = document.querySelector("[data-article-rows]");
     const template = document.getElementById("article-row-template");

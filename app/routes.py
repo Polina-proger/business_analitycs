@@ -920,6 +920,12 @@ def import_report(report_key: str):
         abort(404)
     if not can_submit_report_key(report_key):
         abort(403)
+    report_id = request.form.get("report_id", type=int)
+    if report_id is not None:
+        existing_report = load_report_or_404(report_id)
+        if existing_report["report_key"] != report_key:
+            abort(400)
+        ensure_report_access(existing_report)
     upload = request.files.get("report_file")
     period_type = request.form["period_type"]
     report_date = request.form["report_date"]
@@ -944,6 +950,7 @@ def import_report(report_key: str):
         request.form.get("period_end"),
         summary_metrics,
         article_entries,
+        report_id=report_id,
     )
     sync_article_catalog(article_entries)
     flash("Excel-файл обработан. В базе сохранены только значения отчета, сам файл не хранится.", "success")

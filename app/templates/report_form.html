@@ -28,7 +28,7 @@
             <div class="meta-grid">
                 <label class="field">
                     <span>Тип периода</span>
-                    <select name="period_type" data-period-type>
+                    <select name="period_type" data-period-type data-period-form="manual">
                         {% for key, label in period_labels.items() %}
                             <option value="{{ key }}" {% if report and report.period_type == key %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
@@ -36,15 +36,15 @@
                 </label>
                 <label class="field">
                     <span>Дата отчета</span>
-                    <input type="date" name="report_date" value="{{ report.report_date if report else today }}" required>
+                    <input type="date" name="report_date" value="{{ report.report_date if report else today }}" required data-report-date data-period-form="manual">
                 </label>
                 <label class="field">
                     <span>Начало периода</span>
-                    <input type="date" name="period_start" value="{{ report.period_start if report else '' }}">
+                    <input type="date" name="period_start" value="{{ report.period_start if report else '' }}" data-period-start data-period-form="manual">
                 </label>
                 <label class="field">
                     <span>Конец периода</span>
-                    <input type="date" name="period_end" value="{{ report.period_end if report else '' }}">
+                    <input type="date" name="period_end" value="{{ report.period_end if report else '' }}" data-period-end data-period-form="manual">
                 </label>
             </div>
 
@@ -144,25 +144,28 @@
             </div>
             <div class="hint-box">Из шаблона в базу попадают только значения. Сам Excel-файл после обработки не хранится.</div>
             <form method="post" action="{{ url_for('main.import_report', report_key=report_key) }}" enctype="multipart/form-data" class="form-stack">
+                {% if report %}
+                    <input type="hidden" name="report_id" value="{{ report.id }}">
+                {% endif %}
                 <label class="field">
                     <span>Тип периода</span>
-                    <select name="period_type">
+                    <select name="period_type" data-period-type data-period-form="import">
                         {% for key, label in period_labels.items() %}
-                            <option value="{{ key }}">{{ label }}</option>
+                            <option value="{{ key }}" {% if report and report.period_type == key %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </label>
                 <label class="field">
                     <span>Дата отчета</span>
-                    <input type="date" name="report_date" value="{{ today }}" required>
+                    <input type="date" name="report_date" value="{{ report.report_date if report else today }}" required data-report-date data-period-form="import">
                 </label>
                 <label class="field">
                     <span>Начало периода</span>
-                    <input type="date" name="period_start">
+                    <input type="date" name="period_start" value="{{ report.period_start if report else '' }}" data-period-start data-period-form="import">
                 </label>
                 <label class="field">
                     <span>Конец периода</span>
-                    <input type="date" name="period_end">
+                    <input type="date" name="period_end" value="{{ report.period_end if report else '' }}" data-period-end data-period-form="import">
                 </label>
                 <label class="field">
                     <span>Excel-файл</span>
