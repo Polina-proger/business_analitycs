@@ -668,26 +668,42 @@ def dashboard_url_with_state(**overrides) -> str:
 
 
 def purge_expired_data() -> None:
-    retention_days = int(current_app.config.get("DATA_RETENTION_DAYS", 62))
-    cutoff = date.today() - timedelta(days=retention_days)
+    retention_by_period = current_app.config.get(
+        "REPORT_RETENTION_DAYS",
+        {"daily": 62, "weekly": 90, "monthly": 180},
+    )
+    policy_start_date = current_app.config.get("RETENTION_POLICY_START_DATE", "2026-06-26")
     db = get_db()
 
-    old_dashboards = db.execute(
-        """
-        SELECT id, filename
-        FROM dashboards
-        WHERE substr(created_at, 1, 10) < ?
-        """,
-        (cutoff.isoformat(),),
-    ).fetchall()
-    for row in old_dashboards:
-        file_path = Path(current_app.config["DASHBOARD_UPLOAD_FOLDER"]) / row["filename"]
-        if file_path.exists():
-            file_path.unlink()
-    if old_dashboards:
-        db.executemany("DELETE FROM dashboards WHERE id = ?", [(row["id"],) for row in old_dashboards])
+    for period_type, retention_days in retention_by_period.items():
+        cutoff = date.today() - timedelta(days=int(retention_days))
 
-    db.execute("DELETE FROM reports WHERE period_end < ?", (cutoff.isoformat(),))
+        old_dashboards = db.execute(
+            """
+            SELECT id, filename
+            FROM dashboards
+            WHERE period_type = ?
+              AND substr(created_at, 1, 10) >= ?
+              AND substr(created_at, 1, 10) < ?
+            """,
+            (period_type, policy_start_date, cutoff.isoformat()),
+        ).fetchall()
+        for row in old_dashboards:
+            file_path = Path(current_app.config["DASHBOARD_UPLOAD_FOLDER"]) / row["filename"]
+            if file_path.exists():
+                file_path.unlink()
+        if old_dashboards:
+            db.executemany("DELETE FROM dashboards WHERE id = ?", [(row["id"],) for row in old_dashboards])
+
+        db.execute(
+            """
+            DELETE FROM reports
+            WHERE period_type = ?
+              AND substr(created_at, 1, 10) >= ?
+              AND period_end < ?
+            """,
+            (period_type, policy_start_date, cutoff.isoformat()),
+        )
     db.commit()
 
 

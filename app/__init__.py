@@ -30,7 +30,12 @@ def create_app():
         SECRET_KEY="business-analytics-local-secret",
         DATABASE=str(data_dir / "business_analytics.sqlite3"),
         DASHBOARD_UPLOAD_FOLDER=str(base_dir / "app" / "uploads" / "dashboards"),
-        DATA_RETENTION_DAYS=62,
+        REPORT_RETENTION_DAYS={
+            "daily": 62,
+            "weekly": 90,
+            "monthly": 180,
+        },
+        RETENTION_POLICY_START_DATE="2026-06-26",
     )
 
     Path(app.config["DASHBOARD_UPLOAD_FOLDER"]).mkdir(parents=True, exist_ok=True)
