@@ -14,6 +14,13 @@ HEADER_FONT = Font(color="FFFFFF", bold=True)
 TITLE_FONT = Font(size=14, bold=True)
 
 
+def cell_import_value(cell):
+    value = cell.value
+    if isinstance(value, (int, float)) and "%" in str(cell.number_format):
+        return value * 100
+    return value
+
+
 def create_report_template(report_key: str, definition: dict, period_type: str) -> bytes:
     workbook = Workbook()
     sheet = workbook.active
@@ -91,8 +98,8 @@ def parse_report_workbook(file_storage) -> dict:
         metrics.append(
             {
                 "code": str(code).strip(),
-                "plan": sheet.cell(row=row, column=4).value,
-                "fact": sheet.cell(row=row, column=5).value,
+                "plan": cell_import_value(sheet.cell(row=row, column=4)),
+                "fact": cell_import_value(sheet.cell(row=row, column=5)),
                 "comment": sheet.cell(row=row, column=6).value,
             }
         )
@@ -101,12 +108,16 @@ def parse_report_workbook(file_storage) -> dict:
     article_entries = []
     if "Поартикульно" in workbook.sheetnames:
         article_sheet = workbook["Поартикульно"]
+        current_article_name = None
         for row in range(2, article_sheet.max_row + 1):
-            article_name = article_sheet.cell(row=row, column=1).value
+            article_name_cell = article_sheet.cell(row=row, column=1).value
+            if article_name_cell not in (None, ""):
+                current_article_name = article_name_cell
+            article_name = current_article_name
             metric_code = article_sheet.cell(row=row, column=2).value
             metric_label = article_sheet.cell(row=row, column=3).value
-            plan = article_sheet.cell(row=row, column=4).value
-            fact = article_sheet.cell(row=row, column=5).value
+            plan = cell_import_value(article_sheet.cell(row=row, column=4))
+            fact = cell_import_value(article_sheet.cell(row=row, column=5))
             comment = article_sheet.cell(row=row, column=6).value
             if not article_name and not metric_code and not plan and not fact and not comment:
                 continue
