@@ -99,7 +99,7 @@ def build_summary_metrics_payload(report_key: str, source: dict | None = None, i
                 "unit": metric["unit"],
                 "has_plan": metric["has_plan"],
                 "direction": metric["direction"],
-                "plan": normalize_number(plan_value) if metric["has_plan"] else None,
+                "plan": normalize_number(plan_value),
                 "fact": normalize_number(fact_value),
                 "comment": str(comment_value).strip() if comment_value else "",
             }
@@ -168,7 +168,7 @@ def build_article_entries_payload(report_key: str, source: dict | None = None, i
                 "unit": lookup[metric_code]["unit"],
                 "has_plan": lookup[metric_code]["has_plan"],
                 "direction": lookup[metric_code]["direction"],
-                "plan": normalize_number(plan_value) if lookup[metric_code]["has_plan"] else None,
+                "plan": normalize_number(plan_value),
                 "fact": normalize_number(fact_value),
                 "comment": comment_text,
             }

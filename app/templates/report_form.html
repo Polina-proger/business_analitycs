@@ -65,11 +65,7 @@
                             <span>{{ metric.unit }}</span>
                         </div>
                         <div>
-                            {% if metric.has_plan %}
-                                <input type="text" name="plan_{{ metric.code }}" value="{{ current.plan if current else '' }}" inputmode="decimal" placeholder="План">
-                            {% else %}
-                                <span class="muted">Не нужен</span>
-                            {% endif %}
+                            <input type="text" name="plan_{{ metric.code }}" value="{{ current.plan if current else '' }}" inputmode="decimal" placeholder="План">
                         </div>
                         <div>
                             <input type="text" name="fact_{{ metric.code }}" value="{{ current.fact if current else '' }}" inputmode="decimal" placeholder="Факт">

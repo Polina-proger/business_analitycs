@@ -38,10 +38,8 @@
                     {% endif %}
                 </div>
                 <div class="metric-sub">
-                    {% if metric.has_plan %}
+                    {% if metric.plan is not none %}
                         <span>План: {{ format_metric(metric.plan, metric.unit) }}</span>
-                    {% else %}
-                        <span>План не требуется</span>
                     {% endif %}
                     {% if metric.comment %}
                         <span>{{ metric.comment }}</span>
@@ -76,7 +74,7 @@
                             {% for entry in group.entries %}
                                 <div class="article-detail-row">
                                     <div>{{ entry.metric_label }} · {{ entry.unit }}</div>
-                                    <div>{{ format_metric(entry.plan, entry.unit) if entry.has_plan else 'Не нужен' }}</div>
+                                    <div>{{ format_metric(entry.plan, entry.unit) if entry.plan is not none else '' }}</div>
                                     <div>{{ format_metric(entry.fact, entry.unit) }}</div>
                                     <div>{{ entry.comment or '—' }}</div>
                                 </div>
