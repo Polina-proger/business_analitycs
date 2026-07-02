@@ -9,7 +9,7 @@ from . import db
 from .routes import bp
 
 
-def format_metric(value, unit=""):
+def format_metric(value, unit="", metric_code=None, for_plan=False):
     if value is None:
         return "—"
     if unit == "₽":
@@ -17,6 +17,12 @@ def format_metric(value, unit=""):
         return f"{formatted} ₽"
     if unit == "%":
         return f"{value:.1f}%"
+    if metric_code == "turnover_orders":
+        if float(value).is_integer():
+            base_value = f"{int(value)}"
+        else:
+            base_value = f"{value:,.2f}".replace(",", " ").replace(".", ",")
+        return base_value if for_plan else f"{base_value} дней"
     if float(value).is_integer():
         return f"{int(value)} {unit}".strip()
     return f"{value:,.2f}".replace(",", " ").replace(".", ",") + (f" {unit}" if unit else "")

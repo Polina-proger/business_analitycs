@@ -31,7 +31,7 @@
                 <div class="metric-top">
                     <div>
                         <div class="metric-label">{{ metric.label }}</div>
-                        <div class="metric-value">{{ format_metric(metric.fact, metric.unit) }}</div>
+                        <div class="metric-value">{{ format_metric(metric.fact, metric.unit, metric.code) }}</div>
                     </div>
                     {% if metric.achievement is not none %}
                         <span class="pill">{{ "%.1f"|format(metric.achievement) }}%</span>
@@ -39,7 +39,7 @@
                 </div>
                 <div class="metric-sub">
                     {% if metric.plan is not none %}
-                        <span>План: {{ format_metric(metric.plan, metric.unit) }}</span>
+                        <span>План: {{ format_metric(metric.plan, metric.unit, metric.code, true) }}</span>
                     {% endif %}
                     {% if metric.comment %}
                         <span>{{ metric.comment }}</span>
@@ -74,8 +74,8 @@
                             {% for entry in group.entries %}
                                 <div class="article-detail-row">
                                     <div>{{ entry.metric_label }} · {{ entry.unit }}</div>
-                                    <div>{{ format_metric(entry.plan, entry.unit) if entry.plan is not none else '' }}</div>
-                                    <div>{{ format_metric(entry.fact, entry.unit) }}</div>
+                                    <div>{{ format_metric(entry.plan, entry.unit, entry.metric_code, true) if entry.plan is not none else '' }}</div>
+                                    <div>{{ format_metric(entry.fact, entry.unit, entry.metric_code) }}</div>
                                     <div>{{ entry.comment or '—' }}</div>
                                 </div>
                             {% endfor %}

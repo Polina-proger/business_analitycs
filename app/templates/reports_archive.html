@@ -50,7 +50,7 @@
                                             {% for metric in report.summary_metrics[:4] %}
                                                 <div class="mini-metric">
                                                     <span>{{ metric.label }}</span>
-                                                    <strong>{{ format_metric(metric.fact, metric.unit) }}</strong>
+                                                    <strong>{{ format_metric(metric.fact, metric.unit, metric.code) }}</strong>
                                                 </div>
                                             {% endfor %}
                                         </div>
