@@ -24,7 +24,7 @@
     </div>
 
     <div class="two-column">
-        <form method="post" class="form-stack">
+        <form method="post" class="form-stack" data-report-submit-form data-confirm-action="Сохранить">
             <div class="meta-grid">
                 <label class="field">
                     <span>Тип периода</span>
@@ -40,15 +40,15 @@
                 </label>
                 <label class="field">
                     <span>Начало периода</span>
-                    <input type="date" name="period_start" value="{{ report.period_start if report else '' }}" data-period-start data-period-form="manual">
+                    <input type="date" name="period_start" value="{{ report.period_start if report else '' }}" data-period-start data-period-form="manual" readonly>
                 </label>
                 <label class="field">
                     <span>Конец периода</span>
-                    <input type="date" name="period_end" value="{{ report.period_end if report else '' }}" data-period-end data-period-form="manual">
+                    <input type="date" name="period_end" value="{{ report.period_end if report else '' }}" data-period-end data-period-form="manual" readonly>
                 </label>
             </div>
 
-            <div class="hint-box">Если начало и конец периода не заполнены, система сама рассчитает их по выбранному типу периода.</div>
+            <div class="hint-box">Начало и конец периода рассчитываются автоматически. Достаточно выбрать тип периода и дату отчета.</div>
 
             <div class="metric-table">
                 <div class="metric-row metric-head">
@@ -139,7 +139,7 @@
                 <h3>Импорт из Excel</h3>
             </div>
             <div class="hint-box">Из шаблона в базу попадают только значения. Сам Excel-файл после обработки не хранится.</div>
-            <form method="post" action="{{ url_for('main.import_report', report_key=report_key) }}" enctype="multipart/form-data" class="form-stack">
+            <form method="post" action="{{ url_for('main.import_report', report_key=report_key) }}" enctype="multipart/form-data" class="form-stack" data-report-submit-form data-confirm-action="Загрузить">
                 {% if report %}
                     <input type="hidden" name="report_id" value="{{ report.id }}">
                 {% endif %}
@@ -157,11 +157,11 @@
                 </label>
                 <label class="field">
                     <span>Начало периода</span>
-                    <input type="date" name="period_start" value="{{ report.period_start if report else '' }}" data-period-start data-period-form="import">
+                    <input type="date" name="period_start" value="{{ report.period_start if report else '' }}" data-period-start data-period-form="import" readonly>
                 </label>
                 <label class="field">
                     <span>Конец периода</span>
-                    <input type="date" name="period_end" value="{{ report.period_end if report else '' }}" data-period-end data-period-form="import">
+                    <input type="date" name="period_end" value="{{ report.period_end if report else '' }}" data-period-end data-period-form="import" readonly>
                 </label>
                 <label class="field">
                     <span>Excel-файл</span>
@@ -200,4 +200,21 @@
         </div>
     </div>
 </template>
+
+<div class="confirm-overlay" data-report-confirm hidden>
+    <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="report-confirm-title">
+        <button class="confirm-close" type="button" aria-label="Закрыть" data-confirm-close>×</button>
+        <div class="auth-kicker">Проверка</div>
+        <h3 id="report-confirm-title">Сверьте данные</h3>
+        <p class="confirm-text" data-confirm-message></p>
+        <div class="confirm-period">
+            <span data-confirm-period-type></span>
+            <strong data-confirm-period-range></strong>
+        </div>
+        <div class="inline-actions">
+            <button class="btn btn-primary" type="button" data-confirm-submit>Подтвердить</button>
+            <button class="btn btn-ghost" type="button" data-confirm-close>Отмена</button>
+        </div>
+    </div>
+</div>
 {% endblock %}

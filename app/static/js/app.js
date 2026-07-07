@@ -137,6 +137,125 @@ function bindPeriodAutoFill() {
 
 bindPeriodAutoFill();
 
+function formatDateDisplay(value) {
+    if (!value) {
+        return "—";
+    }
+    const [year, month, day] = value.split("-").map(Number);
+    if (!year || !month || !day) {
+        return value;
+    }
+    return `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.${year}`;
+}
+
+function getPeriodTypeText(periodType) {
+    const labels = {
+        daily: {
+            action: "день",
+            title: "День",
+        },
+        weekly: {
+            action: "неделю",
+            title: "Неделя",
+        },
+        monthly: {
+            action: "месяц",
+            title: "Месяц",
+        },
+    };
+    return labels[periodType] || {
+        action: "период",
+        title: "Период",
+    };
+}
+
+function buildPeriodDisplay(periodType, reportDateValue, startValue, endValue) {
+    const bounds = buildPeriodBounds(periodType, reportDateValue);
+    const start = startValue || bounds?.start || "";
+    const end = endValue || bounds?.end || "";
+    if (periodType === "daily") {
+        return formatDateDisplay(reportDateValue || start);
+    }
+    return `${formatDateDisplay(start)} - ${formatDateDisplay(end)}`;
+}
+
+function bindReportConfirmation() {
+    const overlay = document.querySelector("[data-report-confirm]");
+    if (!overlay) {
+        return;
+    }
+
+    const messageNode = overlay.querySelector("[data-confirm-message]");
+    const periodTypeNode = overlay.querySelector("[data-confirm-period-type]");
+    const periodRangeNode = overlay.querySelector("[data-confirm-period-range]");
+    const submitButton = overlay.querySelector("[data-confirm-submit]");
+    const closeButtons = overlay.querySelectorAll("[data-confirm-close]");
+
+    let pendingForm = null;
+
+    function closeDialog() {
+        overlay.hidden = true;
+        document.body.classList.remove("dialog-open");
+        pendingForm = null;
+    }
+
+    function openDialog(form) {
+        const periodType = form.querySelector("[data-period-type]")?.value || "";
+        const reportDate = form.querySelector("[data-report-date]")?.value || "";
+        const periodStart = form.querySelector("[data-period-start]")?.value || "";
+        const periodEnd = form.querySelector("[data-period-end]")?.value || "";
+        const action = form.dataset.confirmAction || "Сохранить";
+        const labels = getPeriodTypeText(periodType);
+
+        pendingForm = form;
+        messageNode.textContent = `${action} отчет за ${labels.action}`;
+        periodTypeNode.textContent = labels.title;
+        periodRangeNode.textContent = buildPeriodDisplay(periodType, reportDate, periodStart, periodEnd);
+        submitButton.textContent = action;
+        overlay.hidden = false;
+        document.body.classList.add("dialog-open");
+    }
+
+    document.querySelectorAll("[data-report-submit-form]").forEach((form) => {
+        form.addEventListener("submit", (event) => {
+            if (form.dataset.confirmedSubmit === "true") {
+                delete form.dataset.confirmedSubmit;
+                return;
+            }
+            event.preventDefault();
+            openDialog(form);
+        });
+    });
+
+    submitButton?.addEventListener("click", () => {
+        if (!pendingForm) {
+            closeDialog();
+            return;
+        }
+        pendingForm.dataset.confirmedSubmit = "true";
+        closeDialog();
+        HTMLFormElement.prototype.submit.call(pendingForm);
+    });
+
+    closeButtons.forEach((button) => {
+        button.addEventListener("click", closeDialog);
+    });
+
+    overlay.addEventListener("click", (event) => {
+        if (event.target === overlay) {
+            closeDialog();
+        }
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !overlay.hidden) {
+            closeDialog();
+        }
+    });
+}
+
+bindReportConfirmation();
+
 function bindArticleRows() {
     const container = document.querySelector("[data-article-rows]");
     const template = document.getElementById("article-row-template");
