@@ -199,6 +199,31 @@ function bindReportConfirmation() {
         pendingForm = null;
     }
 
+    function formHasReportContent(form) {
+        const fileInput = form.querySelector("input[type='file']");
+        if (fileInput) {
+            return fileInput.files.length > 0;
+        }
+
+        const textInputs = form.querySelectorAll(
+            ".metric-table input[type='text'], .article-table input[type='text']"
+        );
+        for (const input of textInputs) {
+            if (input.value.trim()) {
+                return true;
+            }
+        }
+
+        const articleSelects = form.querySelectorAll(".article-table select");
+        for (const select of articleSelects) {
+            if (select.value) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     function openDialog(form) {
         const periodType = form.querySelector("[data-period-type]")?.value || "";
         const reportDate = form.querySelector("[data-report-date]")?.value || "";
@@ -226,6 +251,17 @@ function bindReportConfirmation() {
         if (typeof form.reportValidity === "function" && !form.reportValidity()) {
             return;
         }
+        if (!formHasReportContent(form)) {
+            if (event) {
+                event.preventDefault();
+            }
+            window.alert(
+                form.querySelector("input[type='file']")
+                    ? "Выберите Excel-файл перед загрузкой."
+                    : "Заполните хотя бы один показатель перед сохранением отчета."
+            );
+            return;
+        }
         if (event) {
             event.preventDefault();
         }
@@ -242,17 +278,6 @@ function bindReportConfirmation() {
         });
     });
 
-    document.addEventListener("click", (event) => {
-        const submitButton = event.target.closest(
-            "[data-report-submit-form] button[type='submit'], [data-report-submit-form] input[type='submit']"
-        );
-        if (!submitButton) {
-            return;
-        }
-        const form = submitButton.closest("[data-report-submit-form]");
-        tryOpenDialog(form, event);
-    });
-
     submitButton?.addEventListener("click", () => {
         if (!pendingForm) {
             closeDialog();
@@ -264,11 +289,16 @@ function bindReportConfirmation() {
     });
 
     closeButtons.forEach((button) => {
-        button.addEventListener("click", closeDialog);
+        button.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            closeDialog();
+        });
     });
 
     overlay.addEventListener("click", (event) => {
         if (event.target === overlay) {
+            event.preventDefault();
             closeDialog();
         }
     });
