@@ -24,7 +24,7 @@
     </div>
 
     <div class="two-column">
-        <form method="post" class="form-stack" data-report-submit-form data-confirm-action="Сохранить">
+        <form method="post" class="form-stack">
             <div class="meta-grid">
                 <label class="field">
                     <span>Тип периода</span>
@@ -131,6 +131,7 @@
                 </div>
             </section>
 
+            <div class="form-review-note">Внимательно сверьте данные.</div>
             <button class="btn btn-primary" type="submit">{% if report %}Сохранить изменения{% else %}Сохранить отчет{% endif %}</button>
         </form>
 
@@ -139,7 +140,7 @@
                 <h3>Импорт из Excel</h3>
             </div>
             <div class="hint-box">Из шаблона в базу попадают только значения. Сам Excel-файл после обработки не хранится.</div>
-            <form method="post" action="{{ url_for('main.import_report', report_key=report_key) }}" enctype="multipart/form-data" class="form-stack" data-report-submit-form data-confirm-action="Загрузить">
+            <form method="post" action="{{ url_for('main.import_report', report_key=report_key) }}" enctype="multipart/form-data" class="form-stack">
                 {% if report %}
                     <input type="hidden" name="report_id" value="{{ report.id }}">
                 {% endif %}
@@ -167,6 +168,7 @@
                     <span>Excel-файл</span>
                     <input type="file" name="report_file" accept=".xlsx" required>
                 </label>
+                <div class="form-review-note">Внимательно сверьте данные.</div>
                 <button class="btn btn-secondary" type="submit">Загрузить шаблон</button>
             </form>
         </aside>
@@ -201,20 +203,4 @@
     </div>
 </template>
 
-<div class="confirm-overlay" data-report-confirm hidden>
-    <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="report-confirm-title">
-        <button class="confirm-close" type="button" aria-label="Закрыть" data-confirm-close>×</button>
-        <div class="auth-kicker">Проверка</div>
-        <h3 id="report-confirm-title">Сверьте данные</h3>
-        <p class="confirm-text" data-confirm-message></p>
-        <div class="confirm-period">
-            <span data-confirm-period-type></span>
-            <strong data-confirm-period-range></strong>
-        </div>
-        <div class="inline-actions">
-            <button class="btn btn-primary" type="button" data-confirm-submit>Подтвердить</button>
-            <button class="btn btn-ghost" type="button" data-confirm-close>Отмена</button>
-        </div>
-    </div>
-</div>
 {% endblock %}
