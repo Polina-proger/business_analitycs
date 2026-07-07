@@ -834,13 +834,16 @@ def report_form(report_key: str):
         sync_article_catalog(article_entries)
         flash("Отчет сохранен.", "success")
         return redirect(url_for("main.report_detail", report_id=report_id))
-    today = date.today().isoformat()
+    today = date.today()
+    current_week_start, _ = default_period_bounds("weekly", today)
+    previous_week_start = current_week_start - timedelta(days=7)
     return render_template(
         "report_form.html",
         definition=definition,
         report_key=report_key,
         period_labels=PERIOD_LABELS,
-        today=today,
+        today=previous_week_start.isoformat(),
+        default_period_type="weekly",
         report=None,
         report_values={},
         article_entries=[{}],
@@ -890,6 +893,7 @@ def edit_report(report_id: int):
         report_key=report["report_key"],
         period_labels=PERIOD_LABELS,
         today=report["report_date"],
+        default_period_type=report["period_type"],
         report=report,
         report_values={item["code"]: item for item in report["summary_metrics"]},
         article_entries=report["article_entries"] or [{}],

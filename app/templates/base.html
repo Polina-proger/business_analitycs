@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Аналитика бизнеса{% endblock %}</title>
     <link rel="icon" type="image/png" sizes="256x256" href="{{ url_for('static', filename='favicon/favicon.png') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v='20260707b') }}">
 </head>
 <body class="{% if not g.user %}auth-body{% endif %}">
     <div class="app-shell {% if not g.user %}auth-shell{% endif %}">
@@ -69,6 +69,6 @@
             {% block content %}{% endblock %}
         </main>
     </div>
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js', v='20260707b') }}"></script>
 </body>
 </html>

@@ -216,15 +216,41 @@ function bindReportConfirmation() {
         document.body.classList.add("dialog-open");
     }
 
+    function tryOpenDialog(form, event = null) {
+        if (!form) {
+            return;
+        }
+        if (form.dataset.confirmedSubmit === "true") {
+            return;
+        }
+        if (typeof form.reportValidity === "function" && !form.reportValidity()) {
+            return;
+        }
+        if (event) {
+            event.preventDefault();
+        }
+        openDialog(form);
+    }
+
     document.querySelectorAll("[data-report-submit-form]").forEach((form) => {
         form.addEventListener("submit", (event) => {
             if (form.dataset.confirmedSubmit === "true") {
                 delete form.dataset.confirmedSubmit;
                 return;
             }
-            event.preventDefault();
-            openDialog(form);
+            tryOpenDialog(form, event);
         });
+    });
+
+    document.addEventListener("click", (event) => {
+        const submitButton = event.target.closest(
+            "[data-report-submit-form] button[type='submit'], [data-report-submit-form] input[type='submit']"
+        );
+        if (!submitButton) {
+            return;
+        }
+        const form = submitButton.closest("[data-report-submit-form]");
+        tryOpenDialog(form, event);
     });
 
     submitButton?.addEventListener("click", () => {

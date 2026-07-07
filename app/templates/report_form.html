@@ -30,7 +30,7 @@
                     <span>Тип периода</span>
                     <select name="period_type" data-period-type data-period-form="manual">
                         {% for key, label in period_labels.items() %}
-                            <option value="{{ key }}" {% if report and report.period_type == key %}selected{% endif %}>{{ label }}</option>
+                            <option value="{{ key }}" {% if (report and report.period_type == key) or (not report and default_period_type == key) %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </label>
@@ -147,7 +147,7 @@
                     <span>Тип периода</span>
                     <select name="period_type" data-period-type data-period-form="import">
                         {% for key, label in period_labels.items() %}
-                            <option value="{{ key }}" {% if report and report.period_type == key %}selected{% endif %}>{{ label }}</option>
+                            <option value="{{ key }}" {% if (report and report.period_type == key) or (not report and default_period_type == key) %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </label>
